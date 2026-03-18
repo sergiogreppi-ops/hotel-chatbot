@@ -80,7 +80,7 @@ function buildSystemPrompt(settings, rooms, prices) {
   // Ejemplo con $100.000 para que la IA entienda la lógica
   const ej = calcQuote(100000);
 
-
+  const priceLines = Object.entries(prices)
     .slice(0, 60)
     .map(([d, p]) => `${d}: doble=${fmt(p.doble)||"N/D"}, triple=${fmt(p.triple)||"N/D"}, cuádruple=${fmt(p.cuadruple)||"N/D"}`)
     .join("\n");
@@ -142,7 +142,7 @@ Para confirmar la reserva se le pedirá una seña de $[senia] por transferencia 
 
 El saldo restante se abona al llegar:
 $[saldo_sin_desc] con cualquier medio de pago.
-$[saldo_efectivo] pagando en efectivo (con descuento).`;
+$[saldo_efectivo] pagando en efectivo (con descuento).
 
 HABITACIONES: ${roomList}
 HOY: ${today}
@@ -151,8 +151,8 @@ TARIFAS POR NOCHE:
 ${priceLines || "Sin tarifas cargadas."}
 
 INSTRUCCIONES:
-- Respondé en español. Máximo 3-4 oraciones por respuesta.
-- Si preguntan precios para fechas específicas, calculá el total sumando las tarifas noche por noche.
+- Respondé en español. Máximo 2 oraciones salvo cuando cotizás precios.
+- Si preguntan precios para fechas específicas, usá el formato de cotización de arriba con los cálculos exactos.
 - Si el cliente quiere CONFIRMAR, RESERVAR o dejar sus datos, primero verificá si ya tenés en la conversación: nombre, fechas (checkin y checkout), tipo de habitación y cantidad de personas. Si faltan datos, preguntá SOLO los que faltan de a uno. Cuando tengas TODOS esos datos, respondé EXACTAMENTE con este JSON (sin texto adicional):
 HANDOFF_JSON:{"nombre":"...","checkin":"...","checkout":"...","habitacion":"...","personas":"...","precio":"..."}
 - Si la consulta no es sobre el hotel, respondé exactamente: OUT_OF_SCOPE
