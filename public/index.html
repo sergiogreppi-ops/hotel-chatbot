@@ -625,7 +625,7 @@ async function processInput(text) {
     if (reply === 'HANDOFF_READY' && handoffData) {
       STATE.handoffStage = 'done';
       STATE.history = newHistory;
-      const { bubble } = addRow('bot', '¡Perfecto! Acá están los datos de tu consulta:');
+      const { bubble } = addRow('bot', 'Acá están los datos de tu consulta. Recordá que la disponibilidad se confirma con nuestro equipo:');
       bubble.innerHTML += buildContactButtons(handoffData, hotelWhatsapp, hotelEmail);
       addSys('— reserva lista para confirmar —');
     } else {

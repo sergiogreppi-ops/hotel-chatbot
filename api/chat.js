@@ -204,7 +204,7 @@ INSTRUCCIONES:
 - Cuando el cliente pida precio para fechas concretas y tengas checkin, checkout y tipo de habitación, respondé EXACTAMENTE con este JSON (sin texto adicional):
 QUOTE_REQUEST:{"checkin":"YYYY-MM-DD","checkout":"YYYY-MM-DD","tipo":"doble|triple|cuadruple"}
 - Si el cliente no especificó las fechas o el tipo de habitación, preguntale solo lo que falta.
-- Si el cliente quiere CONFIRMAR o RESERVAR, los únicos datos que necesitás son: nombre, fechas, tipo de habitación y cantidad de personas. NUNCA pidas teléfono ni email — esos datos los obtiene el hotel por WhatsApp cuando el cliente confirma. Cuando tengas los 4 datos respondé EXACTAMENTE:
+- Si el cliente quiere CONFIRMAR o RESERVAR, los únicos datos que necesitás son: nombre, fechas, tipo de habitación y cantidad de personas. NUNCA pidas teléfono ni email. Cuando tengas los 4 datos, respondé ÚNICA Y EXCLUSIVAMENTE con el JSON, sin ningún texto antes ni después, sin saludos, sin resumen, sin explicación:
 HANDOFF_JSON:{"nombre":"...","checkin":"...","checkout":"...","habitacion":"...","personas":"...","precio":"..."}
 - Si faltan datos para el handoff, preguntá de a uno.
 - Si la consulta no es sobre el hotel: OUT_OF_SCOPE
@@ -277,14 +277,13 @@ export default async function handler(req) {
       }
     }
 
-    // Detectar HANDOFF con datos JSON
+    // Detectar HANDOFF — aunque Claude ponga texto antes del JSON
     let finalReply = reply;
-    let handoffData = null;
 
-    if (reply.trim().startsWith("HANDOFF_JSON:")) {
+    const handoffMatch = reply.match(/HANDOFF_JSON:(\{.+\})/s);
+    if (handoffMatch) {
       try {
-        const raw = JSON.parse(reply.trim().replace("HANDOFF_JSON:", ""));
-        // Completar con lastQuote si faltan datos
+        const raw = JSON.parse(handoffMatch[1]);
         const handoffData = {
           nombre:     raw.nombre     || "",
           checkin:    raw.checkin    || lastQuote?.checkin    || "",
@@ -301,12 +300,13 @@ export default async function handler(req) {
             created_at: new Date().toISOString(),
           });
         } catch(e) {}
-        finalReply = "HANDOFF_READY";
         return new Response(JSON.stringify({ reply: "HANDOFF_READY", handoffData, hotelWhatsapp, hotelEmail }), {
           status: 200, headers: { ...cors, "Content-Type": "application/json" },
         });
-      } catch(e) { finalReply = reply; }
-    } else if (reply.trim() === "OUT_OF_SCOPE" || reply.trim() === "UNANSWERED") {
+      } catch(e) { /* continúa */ }
+    }
+
+    if (reply.trim() === "OUT_OF_SCOPE" || reply.trim() === "UNANSWERED") {
       finalReply = settings["bot_fallback_msg"] || "Esa consulta está fuera de mis posibilidades. Podés contactarnos directamente.";
     }
 
