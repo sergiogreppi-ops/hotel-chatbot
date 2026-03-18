@@ -738,11 +738,17 @@ async function processInput(text) {
 }
 
 // Convierte URLs en links clickeables
+// Convierte URLs en links clickeables — ignora las que ya están en atributos href
 function linkifyUrls(html) {
-  return html.replace(
-    /(https?:\/\/[^\s<"]+)/g,
-    '<a href="$1" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:underline;">$1</a>'
-  );
+  // Dividir por tags HTML existentes, linkificar solo el texto entre tags
+  return html.replace(/(<[^>]+>)|([^<]+)/g, (match, tag, text) => {
+    if (tag) return tag; // es un tag HTML, dejarlo intacto
+    if (!text) return match;
+    return text.replace(
+      /(https?:\/\/[^\s<"]+)/g,
+      '<a href="$1" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:underline;">$1</a>'
+    );
+  });
 }
 
 // Convierte números de tel/WA y emails en links clickeables
