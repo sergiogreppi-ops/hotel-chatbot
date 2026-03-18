@@ -6,1130 +6,616 @@
 <title>Admin · Chatbot Hotel</title>
 <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #0f0f0f;
-  --bg2: #161616;
-  --bg3: #1e1e1e;
-  --border: #2a2a2a;
-  --border2: #333;
-  --text: #e8e8e8;
-  --text2: #888;
-  --text3: #555;
-  --gold: #c9a84c;
-  --gold2: #e8c97a;
-  --green: #4caf7d;
-  --green-bg: #0d1f16;
-  --red: #e05555;
-  --red-bg: #1f0d0d;
-  --blue: #5b9cf6;
-  --blue-bg: #0d1525;
-  --amber: #f5a623;
-  --amber-bg: #1f1500;
-  --radius: 10px;
-  --radius-sm: 6px;
-}
-
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-html { scroll-behavior: smooth; }
-
-body {
-  font-family: 'Geist Mono', monospace;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-/* ── LAYOUT ─────────────────────────── */
-.app { display: flex; min-height: 100vh; }
-
-.sidebar {
-  width: 220px;
-  background: var(--bg2);
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  position: fixed;
-  top: 0; left: 0; bottom: 0;
-  z-index: 100;
-}
-
-.main {
-  margin-left: 220px;
-  flex: 1;
-  min-height: 100vh;
-}
-
-/* ── SIDEBAR ────────────────────────── */
-.sidebar-logo {
-  padding: 24px 20px 20px;
-  border-bottom: 1px solid var(--border);
-}
-.logo-label {
-  font-family: 'Instrument Serif', serif;
-  font-size: 18px;
-  color: var(--gold);
-  letter-spacing: .02em;
-  display: block;
-}
-.logo-sub {
-  font-size: 10px;
-  color: var(--text3);
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  margin-top: 2px;
-}
-
-.nav { padding: 12px 0; flex: 1; }
-.nav-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 9px 20px;
-  color: var(--text2);
-  cursor: pointer;
-  transition: all .15s;
-  border-left: 2px solid transparent;
-  font-size: 12px;
-  letter-spacing: .03em;
-  user-select: none;
-}
-.nav-item:hover { color: var(--text); background: var(--bg3); }
-.nav-item.active {
-  color: var(--gold);
-  border-left-color: var(--gold);
-  background: rgba(201,168,76,.06);
-}
-.nav-icon { font-size: 14px; width: 16px; text-align: center; }
-.nav-badge {
-  margin-left: auto;
-  background: var(--red);
-  color: #fff;
-  font-size: 10px;
-  padding: 1px 6px;
-  border-radius: 10px;
-  font-weight: 500;
-}
-
-.sidebar-footer {
-  padding: 16px 20px;
-  border-top: 1px solid var(--border);
-}
-.status-pill {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 11px;
-  color: var(--text3);
-}
-.status-dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--green);
-  animation: pulse 2s infinite;
-}
-@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
-
-/* ── TOPBAR ─────────────────────────── */
-.topbar {
-  height: 56px;
-  border-bottom: 1px solid var(--border);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 32px;
-  background: var(--bg);
-  position: sticky;
-  top: 0;
-  z-index: 50;
-}
-.topbar-title {
-  font-family: 'Instrument Serif', serif;
-  font-size: 16px;
-  color: var(--text);
-  font-style: italic;
-}
-.topbar-actions { display: flex; gap: 8px; }
-
-.btn {
-  font-family: 'Geist Mono', monospace;
-  font-size: 11px;
-  padding: 7px 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border2);
-  cursor: pointer;
-  transition: all .15s;
-  letter-spacing: .04em;
-  font-weight: 400;
-}
-.btn-ghost { background: transparent; color: var(--text2); }
-.btn-ghost:hover { background: var(--bg3); color: var(--text); }
-.btn-primary {
-  background: var(--gold);
-  color: #0a0a0a;
-  border-color: var(--gold);
-  font-weight: 500;
-}
-.btn-primary:hover { background: var(--gold2); }
-.btn-primary:disabled { opacity: .4; cursor: not-allowed; }
-.btn-danger { background: transparent; color: var(--red); border-color: var(--red-bg); }
-.btn-danger:hover { background: var(--red-bg); }
-
-/* ── CONTENT ────────────────────────── */
-.content { padding: 32px; max-width: 860px; }
-
-.section { display: none; }
-.section.active { display: block; animation: fadeIn .2s ease; }
-@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
-
-.section-header { margin-bottom: 28px; }
-.section-header h2 {
-  font-family: 'Instrument Serif', serif;
-  font-size: 22px;
-  font-weight: 400;
-  color: var(--text);
-  margin-bottom: 4px;
-}
-.section-header p { font-size: 12px; color: var(--text2); }
-
-/* ── CARDS ──────────────────────────── */
-.card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 22px;
-  margin-bottom: 16px;
-}
-.card-title {
-  font-size: 11px;
-  color: var(--text3);
-  letter-spacing: .1em;
-  text-transform: uppercase;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--border);
-}
-
-/* ── FORM ELEMENTS ──────────────────── */
-.field { margin-bottom: 16px; }
-.field:last-child { margin-bottom: 0; }
-.label {
-  display: block;
-  font-size: 11px;
-  color: var(--text2);
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  margin-bottom: 6px;
-}
-.input, .textarea, .select {
-  width: 100%;
-  background: var(--bg3);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-sm);
-  padding: 9px 12px;
-  font-family: 'Geist Mono', monospace;
-  font-size: 12.5px;
-  color: var(--text);
-  outline: none;
-  transition: border-color .15s;
-}
-.input:focus, .textarea:focus, .select:focus { border-color: var(--gold); }
-.textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
-.select { cursor: pointer; }
-.select option { background: var(--bg2); }
-
-.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-/* ── TOGGLE CHIPS ───────────────────── */
-.chips { display: flex; flex-wrap: wrap; gap: 7px; }
-.chip {
-  padding: 5px 13px;
-  border-radius: 20px;
-  border: 1px solid var(--border2);
-  font-size: 11.5px;
-  color: var(--text2);
-  cursor: pointer;
-  transition: all .15s;
-  user-select: none;
-  letter-spacing: .02em;
-}
-.chip:hover { border-color: var(--gold); color: var(--text); }
-.chip.active {
-  background: rgba(201,168,76,.12);
-  border-color: var(--gold);
-  color: var(--gold);
-}
-
-/* ── PREGUNTAS SIN RESPUESTA ────────── */
-.questions-filters {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 16px;
-  flex-wrap: wrap;
-}
-.filter-btn {
-  font-family: 'Geist Mono', monospace;
-  font-size: 11px;
-  padding: 5px 12px;
-  border-radius: 20px;
-  border: 1px solid var(--border2);
-  background: transparent;
-  color: var(--text2);
-  cursor: pointer;
-  transition: all .15s;
-  letter-spacing: .03em;
-}
-.filter-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,.08); }
-
-.question-list { display: flex; flex-direction: column; gap: 8px; }
-.question-item {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 14px 16px;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  transition: border-color .15s;
-}
-.question-item:hover { border-color: var(--border2); }
-.q-icon {
-  width: 28px; height: 28px;
-  border-radius: 6px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 13px;
-  flex-shrink: 0;
-}
-.q-icon.unanswered { background: var(--amber-bg); color: var(--amber); }
-.q-icon.added { background: var(--green-bg); color: var(--green); }
-.q-icon.ignored { background: var(--bg3); color: var(--text3); }
-.q-body { flex: 1; min-width: 0; }
-.q-text { color: var(--text); font-size: 13px; margin-bottom: 4px; }
-.q-meta { font-size: 11px; color: var(--text3); }
-.q-meta span { margin-right: 10px; }
-.q-actions { display: flex; gap: 6px; flex-shrink: 0; }
-.q-btn {
-  font-family: 'Geist Mono', monospace;
-  font-size: 10px;
-  padding: 4px 9px;
-  border-radius: 4px;
-  border: 1px solid var(--border2);
-  background: transparent;
-  cursor: pointer;
-  transition: all .15s;
-  letter-spacing: .03em;
-}
-.q-btn.resolve { color: var(--green); border-color: var(--green-bg); }
-.q-btn.resolve:hover { background: var(--green-bg); }
-.q-btn.ignore { color: var(--text3); }
-.q-btn.ignore:hover { background: var(--bg3); color: var(--text2); }
-
-.empty-state {
-  text-align: center;
-  padding: 48px 24px;
-  color: var(--text3);
-}
-.empty-state .empty-icon { font-size: 32px; margin-bottom: 12px; }
-.empty-state p { font-size: 12px; }
-
-/* ── STATS ROW ──────────────────────── */
-.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
-.stat-card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 16px;
-}
-.stat-num { font-size: 24px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
-.stat-label { font-size: 11px; color: var(--text3); letter-spacing: .05em; }
-
-/* ── FORBIDDEN LIST ─────────────────── */
-.forbidden-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
-.forbidden-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  font-size: 12.5px;
-  color: var(--text);
-}
-.forbidden-item button {
-  margin-left: auto;
-  background: none;
-  border: none;
-  color: var(--text3);
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 1;
-  transition: color .15s;
-  font-family: monospace;
-}
-.forbidden-item button:hover { color: var(--red); }
-.forbidden-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
-
-.add-row { display: flex; gap: 8px; }
-.add-row .input { flex: 1; }
-
-/* ── PERSONALITY SELECTOR ───────────── */
-.personality-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.personality-card {
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-sm);
-  padding: 14px;
-  cursor: pointer;
-  transition: all .15s;
-  text-align: center;
-}
-.personality-card:hover { border-color: var(--gold); background: rgba(201,168,76,.04); }
-.personality-card.active {
-  border-color: var(--gold);
-  background: rgba(201,168,76,.1);
-}
-.p-emoji { font-size: 22px; margin-bottom: 6px; }
-.p-name { font-size: 12px; color: var(--text); font-weight: 500; margin-bottom: 3px; }
-.p-desc { font-size: 10.5px; color: var(--text3); line-height: 1.4; }
-
-/* ── TOAST ──────────────────────────── */
-.toast {
-  position: fixed;
-  bottom: 24px; right: 24px;
-  background: var(--bg2);
-  border: 1px solid var(--border2);
-  border-radius: var(--radius-sm);
-  padding: 12px 18px;
-  font-size: 12px;
-  color: var(--text);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transform: translateY(80px);
-  opacity: 0;
-  transition: all .25s;
-  z-index: 999;
-  box-shadow: 0 8px 32px rgba(0,0,0,.4);
-}
-.toast.show { transform: translateY(0); opacity: 1; }
-.toast.success { border-color: var(--green); }
-.toast.error { border-color: var(--red); }
-.toast-dot { width: 6px; height: 6px; border-radius: 50%; }
-.toast.success .toast-dot { background: var(--green); }
-.toast.error .toast-dot { background: var(--red); }
-
-/* ── LOADING ────────────────────────── */
-.spinner {
-  width: 14px; height: 14px;
-  border: 2px solid var(--border2);
-  border-top-color: var(--gold);
-  border-radius: 50%;
-  animation: spin .6s linear infinite;
-  display: inline-block;
-}
-@keyframes spin { to{transform:rotate(360deg)} }
-
-/* ── TOGGLE SWITCH ──────────────────────── */
-.toggle-track {
-  width: 48px; height: 26px;
-  border-radius: 13px;
-  background: var(--border2);
-  position: relative;
-  transition: background .2s;
-}
-.toggle-track.on { background: var(--green); }
-.toggle-thumb {
-  width: 20px; height: 20px;
-  border-radius: 50%;
-  background: white;
-  position: absolute;
-  top: 3px; left: 3px;
-  transition: left .2s;
-  box-shadow: 0 1px 4px rgba(0,0,0,.3);
-}
-.toggle-track.on .toggle-thumb { left: 25px; }
-
-/* ── SCROLLBAR ──────────────────────── */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
-
-@media (max-width: 700px) {
-  .sidebar { display: none; }
-  .main { margin-left: 0; }
-  .content { padding: 20px 16px; }
-  .stats-row { grid-template-columns: 1fr 1fr; }
-  .personality-grid { grid-template-columns: 1fr 1fr; }
-  .field-row { grid-template-columns: 1fr; }
-}
+:root{--bg:#0f0f0f;--bg2:#161616;--bg3:#1e1e1e;--border:#2a2a2a;--border2:#333;--text:#e8e8e8;--text2:#888;--text3:#555;--gold:#c9a84c;--gold2:#e8c97a;--green:#4caf7d;--green-bg:#0d1f16;--red:#e05555;--red-bg:#1f0d0d;--amber:#f5a623;--amber-bg:#1f1500;--radius:10px;--radius-sm:6px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Geist Mono',monospace;background:var(--bg);color:var(--text);min-height:100vh;font-size:13px;line-height:1.6}
+.app{display:flex;min-height:100vh}
+.sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.main{margin-left:220px;flex:1;min-height:100vh}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border)}
+.logo-label{font-family:'Instrument Serif',serif;font-size:18px;color:var(--gold);letter-spacing:.02em;display:block}
+.logo-sub{font-size:10px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.nav{padding:12px 0;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;color:var(--text2);cursor:pointer;transition:all .15s;border-left:2px solid transparent;font-size:12px;letter-spacing:.03em;user-select:none}
+.nav-item:hover{color:var(--text);background:var(--bg3)}
+.nav-item.active{color:var(--gold);border-left-color:var(--gold);background:rgba(201,168,76,.06)}
+.nav-icon{font-size:14px;width:16px;text-align:center}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;padding:1px 6px;border-radius:10px;font-weight:500}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border)}
+.status-pill{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--text3)}
+.status-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.topbar{height:56px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;background:var(--bg);position:sticky;top:0;z-index:50}
+.topbar-title{font-family:'Instrument Serif',serif;font-size:16px;color:var(--text);font-style:italic}
+.topbar-actions{display:flex;gap:8px}
+.btn{font-family:'Geist Mono',monospace;font-size:11px;padding:7px 14px;border-radius:var(--radius-sm);border:1px solid var(--border2);cursor:pointer;transition:all .15s;letter-spacing:.04em;font-weight:400}
+.btn-ghost{background:transparent;color:var(--text2)}
+.btn-ghost:hover{background:var(--bg3);color:var(--text)}
+.btn-primary{background:var(--gold);color:#0a0a0a;border-color:var(--gold);font-weight:500}
+.btn-primary:hover{background:var(--gold2)}
+.btn-primary:disabled{opacity:.4;cursor:not-allowed}
+.content{padding:32px;max-width:860px}
+.section{display:none}
+.section.active{display:block;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.section-header{margin-bottom:28px}
+.section-header h2{font-family:'Instrument Serif',serif;font-size:22px;font-weight:400;color:var(--text);margin-bottom:4px}
+.section-header p{font-size:12px;color:var(--text2)}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:22px;margin-bottom:16px}
+.card-title{font-size:11px;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.card-hint{font-size:11.5px;color:var(--text2);margin-bottom:16px;line-height:1.6;padding:10px 12px;background:var(--bg3);border-radius:var(--radius-sm);border-left:2px solid var(--gold)}
+.field{margin-bottom:16px}
+.field:last-child{margin-bottom:0}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.label{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text2);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+.label-req{color:var(--red);font-size:10px}
+.field-help{font-size:10.5px;color:var(--text3);margin-top:5px;line-height:1.5}
+.input,.textarea,.select{width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:9px 12px;font-family:'Geist Mono',monospace;font-size:12.5px;color:var(--text);outline:none;transition:border-color .15s}
+.input:focus,.textarea:focus,.select:focus{border-color:var(--gold)}
+.textarea{resize:vertical;min-height:80px;line-height:1.6}
+.input-prefix{display:flex;align-items:center;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);overflow:hidden;transition:border-color .15s}
+.input-prefix:focus-within{border-color:var(--gold)}
+.input-prefix span{padding:9px 10px;font-size:12px;color:var(--text3);border-right:1px solid var(--border2);white-space:nowrap;flex-shrink:0}
+.input-prefix input{border:none;background:transparent;flex:1;padding:9px 10px;font-family:'Geist Mono',monospace;font-size:12.5px;color:var(--text);outline:none}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{padding:5px 13px;border-radius:20px;border:1px solid var(--border2);font-size:11.5px;color:var(--text2);cursor:pointer;transition:all .15s;user-select:none}
+.chip:hover{border-color:var(--gold);color:var(--text)}
+.chip.active{background:rgba(201,168,76,.12);border-color:var(--gold);color:var(--gold)}
+.personality-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.personality-card{border:1px solid var(--border2);border-radius:var(--radius-sm);padding:14px;cursor:pointer;transition:all .15s;text-align:center}
+.personality-card:hover{border-color:var(--gold);background:rgba(201,168,76,.04)}
+.personality-card.active{border-color:var(--gold);background:rgba(201,168,76,.1)}
+.p-emoji{font-size:22px;margin-bottom:6px}
+.p-name{font-size:12px;color:var(--text);font-weight:500;margin-bottom:3px}
+.p-desc{font-size:10.5px;color:var(--text3);line-height:1.4}
+.forbidden-list{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.forbidden-item{display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 12px;font-size:12.5px;color:var(--text)}
+.forbidden-item button{margin-left:auto;background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;line-height:1;transition:color .15s}
+.forbidden-item button:hover{color:var(--red)}
+.forbidden-dot{width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0}
+.add-row{display:flex;gap:8px}
+.add-row .input{flex:1}
+.questions-filters{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-btn{font-family:'Geist Mono',monospace;font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .15s}
+.filter-btn.active{border-color:var(--gold);color:var(--gold);background:rgba(201,168,76,.08)}
+.question-list{display:flex;flex-direction:column;gap:8px}
+.question-item{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;display:flex;align-items:flex-start;gap:12px;transition:border-color .15s}
+.question-item:hover{border-color:var(--border2)}
+.q-icon{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
+.q-icon.unanswered{background:var(--amber-bg);color:var(--amber)}
+.q-icon.added{background:var(--green-bg);color:var(--green)}
+.q-icon.ignored{background:var(--bg3);color:var(--text3)}
+.q-body{flex:1;min-width:0}
+.q-text{color:var(--text);font-size:13px;margin-bottom:4px}
+.q-meta{font-size:11px;color:var(--text3)}
+.q-meta span{margin-right:10px}
+.q-actions{display:flex;gap:6px;flex-shrink:0}
+.q-btn{font-family:'Geist Mono',monospace;font-size:10px;padding:4px 9px;border-radius:4px;border:1px solid var(--border2);background:transparent;cursor:pointer;transition:all .15s}
+.q-btn.resolve{color:var(--green);border-color:var(--green-bg)}
+.q-btn.resolve:hover{background:var(--green-bg)}
+.q-btn.ignore{color:var(--text3)}
+.q-btn.ignore:hover{background:var(--bg3);color:var(--text2)}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px}
+.stat-num{font-size:24px;font-weight:500;color:var(--text);margin-bottom:2px}
+.stat-label{font-size:11px;color:var(--text3);letter-spacing:.05em}
+.empty-state{text-align:center;padding:48px 24px;color:var(--text3)}
+.empty-state .empty-icon{font-size:32px;margin-bottom:12px}
+.empty-state p{font-size:12px}
+.toggle-track{width:48px;height:26px;border-radius:13px;background:var(--border2);position:relative;transition:background .2s}
+.toggle-track.on{background:var(--green)}
+.toggle-thumb{width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:3px;left:3px;transition:left .2s;box-shadow:0 1px 4px rgba(0,0,0,.3)}
+.toggle-track.on .toggle-thumb{left:25px}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:12px 18px;font-size:12px;color:var(--text);display:flex;align-items:center;gap:8px;transform:translateY(80px);opacity:0;transition:all .25s;z-index:999;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.success{border-color:var(--green)}
+.toast.error{border-color:var(--red)}
+.toast-dot{width:6px;height:6px;border-radius:50%}
+.toast.success .toast-dot{background:var(--green)}
+.toast.error .toast-dot{background:var(--red)}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+@media(max-width:700px){.sidebar{display:none}.main{margin-left:0}.content{padding:20px 16px}.stats-row{grid-template-columns:1fr 1fr}.personality-grid{grid-template-columns:1fr 1fr}.field-row{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
-
 <div class="app">
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-logo">
-      <span class="logo-label">Hotel Admin</span>
-      <span class="logo-sub">Panel de control</span>
-    </div>
-    <nav class="nav">
-      <div class="nav-item active" data-section="info" onclick="switchSection('info', this)">
-        <span class="nav-icon">🏨</span> Información
-      </div>
-      <div class="nav-item" data-section="questions" onclick="switchSection('questions', this)">
-        <span class="nav-icon">💬</span> Preguntas
-        <span class="nav-badge" id="badgeCount" style="display:none">0</span>
-      </div>
-      <div class="nav-item" data-section="config" onclick="switchSection('config', this)">
-        <span class="nav-icon">⚙️</span> Configuración
-      </div>
-    </nav>
-    <div class="sidebar-footer">
-      <div class="status-pill">
-        <div class="status-dot"></div>
-        Chatbot activo
-      </div>
-    </div>
-  </aside>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-label">Hotel Admin</span>
+    <span class="logo-sub">Panel de control</span>
+  </div>
+  <nav class="nav">
+    <div class="nav-item active" onclick="switchSection('info',this)"><span class="nav-icon">🏨</span> Información</div>
+    <div class="nav-item" onclick="switchSection('questions',this)"><span class="nav-icon">💬</span> Preguntas <span class="nav-badge" id="badgeCount" style="display:none">0</span></div>
+    <div class="nav-item" onclick="switchSection('config',this)"><span class="nav-icon">⚙️</span> Configuración</div>
+  </nav>
+  <div class="sidebar-footer"><div class="status-pill"><div class="status-dot"></div>Chatbot activo</div></div>
+</aside>
 
-  <!-- MAIN -->
-  <div class="main">
-    <div class="topbar">
-      <span class="topbar-title" id="topbarTitle">Información del hotel</span>
-      <div class="topbar-actions">
-        <button class="btn btn-ghost" onclick="loadData()">↺ Recargar</button>
-        <button class="btn btn-primary" id="saveBtn" onclick="saveCurrentSection()">
-          Guardar cambios
-        </button>
-      </div>
+<div class="main">
+  <div class="topbar">
+    <span class="topbar-title" id="topbarTitle">Información del hotel</span>
+    <div class="topbar-actions">
+      <button class="btn btn-ghost" onclick="loadData()">↺ Recargar</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="saveCurrentSection()">Guardar cambios</button>
     </div>
+  </div>
 
-    <div class="content">
+  <div class="content">
 
-      <!-- ══ SECCIÓN: INFORMACIÓN ════════════════ -->
-      <div class="section active" id="section-info">
-        <div class="section-header">
-          <h2>Información del hotel</h2>
-          <p>Esta info la usa el chatbot para responder consultas de clientes.</p>
+    <!-- ═══════════════════════════════
+         1. INFORMACIÓN
+    ═══════════════════════════════ -->
+    <div class="section active" id="section-info">
+      <div class="section-header">
+        <h2>Información del hotel</h2>
+        <p>El chatbot usa esta información para responder consultas. A mayor detalle, mejor calidad de respuestas.</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Datos de contacto</div>
+        <div class="card-hint">Estos datos se usan cuando un cliente pregunta cómo contactar al hotel, y también para armar los links de WhatsApp y email al confirmar una reserva.</div>
+
+        <div class="field">
+          <label class="label">Nombre del hotel <span class="label-req">*</span></label>
+          <input class="input" id="hotelName" placeholder="Ej: Hotel La Serena" />
+          <div class="field-help">Con este nombre se presenta el bot al cliente.</div>
         </div>
 
-        <div class="card">
-          <div class="card-title">Datos generales</div>
+        <div class="field-row">
           <div class="field">
-            <label class="label">Nombre del hotel</label>
-            <input class="input" id="hotelName" placeholder="Ej: Hotel La Serena" />
-          </div>
-          <div class="field-row">
-            <div class="field">
-              <label class="label">📞 Teléfono (llamadas)</label>
-              <input class="input" id="hotelPhone" placeholder="Ej: +54 11 1234-5678" />
-            </div>
-            <div class="field">
-              <label class="label">💬 WhatsApp (mensajes)</label>
-              <input class="input" id="hotelWhatsapp" placeholder="Ej: +54 9 11 1234-5678" />
-            </div>
+            <label class="label">📞 Teléfono (llamadas)</label>
+            <div class="input-prefix"><span>Tel</span><input id="hotelPhone" placeholder="+54 2255 123456" /></div>
+            <div class="field-help">Para clientes que quieran llamar. Incluí el código de área.</div>
           </div>
           <div class="field">
-            <label class="label">Dirección</label>
-            <input class="input" id="hotelAddress" placeholder="Ej: Av. Costanera 1234, Villa Gesell" />
-          </div>
-          <div class="field">
-            <label class="label">Email de contacto</label>
-            <input class="input" id="hotelEmail" type="email" placeholder="Ej: reservas@hotel.com" />
+            <label class="label">💬 WhatsApp <span class="label-req">*</span></label>
+            <div class="input-prefix"><span>WA</span><input id="hotelWhatsapp" placeholder="+54 9 2255 123456" /></div>
+            <div class="field-help">Número que recibe las reservas. Formato: +549 + código de área sin 0 + número sin 15. Ej: +5492255123456</div>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-title">Horarios</div>
-          <div class="field-row">
-            <div class="field">
-              <label class="label">Check-in</label>
-              <input class="input" id="checkinTime" placeholder="Ej: 14:00 hs" />
-            </div>
-            <div class="field">
-              <label class="label">Check-out</label>
-              <input class="input" id="checkoutTime" placeholder="Ej: 10:00 hs" />
-            </div>
+        <div class="field">
+          <label class="label">Email <span class="label-req">*</span></label>
+          <input class="input" id="hotelEmail" type="email" placeholder="reservas@hotel.com" />
+          <div class="field-help">Email que recibe las reservas. Si lo dejás vacío, el bot usa el email del template de confirmación de la app de reservas.</div>
+        </div>
+
+        <div class="field">
+          <label class="label">Dirección</label>
+          <input class="input" id="hotelAddress" placeholder="Ej: Av. Costanera 1234, Villa Gesell, Buenos Aires" />
+          <div class="field-help">Dirección completa. El bot la comparte si alguien pregunta cómo llegar.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Horarios</div>
+        <div class="card-hint">Los horarios de check-in y check-out aparecen automáticamente al final de cada cotización de precios que entrega el bot.</div>
+
+        <div class="field-row">
+          <div class="field">
+            <label class="label">Check-in <span class="label-req">*</span></label>
+            <input class="input" id="checkinTime" placeholder="Ej: 13:00 hs" />
+            <div class="field-help">Hora desde la que el cliente puede ingresar.</div>
           </div>
           <div class="field">
-            <label class="label">Horario de recepción</label>
-            <input class="input" id="receptionHours" placeholder="Ej: 24 hs / 08:00 a 22:00 hs" />
+            <label class="label">Check-out <span class="label-req">*</span></label>
+            <input class="input" id="checkoutTime" placeholder="Ej: 10:00 hs" />
+            <div class="field-help">Hora límite de salida del día de egreso.</div>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-title">Servicios disponibles</div>
-          <p style="font-size:11.5px;color:var(--text2);margin-bottom:12px;line-height:1.6;">
-            Describí los servicios con el detalle que quieras. La IA los va a interpretar y usar para responder preguntas de los clientes.
-          </p>
-          <div class="field">
-            <textarea class="textarea" id="hotelServices" style="min-height:120px;"
-              placeholder="Ej:
-- WiFi gratuito en todas las habitaciones y áreas comunes
+        <div class="field">
+          <label class="label">Horario de recepción</label>
+          <input class="input" id="receptionHours" placeholder="Ej: Lunes a domingo, 8 a 22 hs" />
+          <div class="field-help">Si la recepción no es 24 hs, aclararlo para que el bot informe cuando pueden llamar o presentarse.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Descripción del hotel</div>
+        <div class="card-hint">Texto libre para presentar el hotel. Incluí lo que lo diferencia: ubicación, estilo, tipo de huéspedes al que apunta, etc. El bot lo usa cuando alguien pregunta "¿cómo es el hotel?" o algo similar.</div>
+        <div class="field">
+          <textarea class="textarea" id="hotelDesc" style="min-height:90px"
+            placeholder="Ej: Hotel boutique a media cuadra del mar, en el centro de Villa Gesell. Rodeado de naturaleza y a minutos de los principales comercios. Ideal para familias y parejas que buscan tranquilidad."></textarea>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Servicios disponibles</div>
+        <div class="card-hint">
+          Escribí los servicios en formato lista, un ítem por línea, empezando con guión (-).<br>
+          Incluí detalles como horarios, condiciones o restricciones — cuanto más específico, mejor responde el bot.<br><br>
+          <strong style="color:var(--gold)">Importante:</strong> el bot solo menciona estos servicios cuando el cliente los pregunta. No los incluye en la cotización de precios automáticamente.
+        </div>
+        <div class="field">
+          <textarea class="textarea" id="hotelServices" style="min-height:150px"
+            placeholder="- WiFi gratuito en habitaciones y áreas comunes
 - Pileta al aire libre, disponible de 8 a 20 hs
 - Desayuno continental incluido de 7:30 a 10:30 hs
-- Estacionamiento privado sin costo adicional
-- Room service de 12 a 23 hs
-- Parrilla/BBQ disponible bajo reserva"></textarea>
-          </div>
+- No contamos con estacionamiento propio
+- Parrilla/BBQ disponible bajo reserva (consultá disponibilidad)
+- Área de juegos para niños"></textarea>
         </div>
+      </div>
 
-        <div class="card">
-          <div class="card-title">Políticas del hotel</div>
-          <p style="font-size:11.5px;color:var(--text2);margin-bottom:12px;line-height:1.6;">
-            Escribí las políticas con sus condiciones. Cuanto más detalle, mejor va a responder el chatbot.
-          </p>
-          <div class="field">
-            <textarea class="textarea" id="hotelPolicies" style="min-height:120px;"
-              placeholder="Ej:
-- No se admiten mascotas
-- Prohibido fumar en habitaciones y áreas internas. Hay área de fumadores en el jardín
-- Apto para familias con niños de todas las edades
-- No se permiten eventos ni fiestas
+      <div class="card">
+        <div class="card-title">Políticas y condiciones</div>
+        <div class="card-hint">
+          Condiciones generales del hotel. El bot las usa para responder preguntas como "¿puedo llevar mi perro?" o "¿hay cancelación gratuita?".<br><br>
+          Escribí una condición por línea con guión (-). Sé específico con plazos y excepciones para que el bot pueda dar respuestas precisas.
+        </div>
+        <div class="field">
+          <textarea class="textarea" id="hotelPolicies" style="min-height:150px"
+            placeholder="- No se admiten mascotas
+- No se permiten eventos, fiestas ni reuniones
 - Cancelación gratuita hasta 48 hs antes del check-in
-- Se requiere tarjeta de crédito como garantía al momento del check-in"></textarea>
-          </div>
+- Capacidad máxima según tipo de habitación, no se agregan camas extra
+- Prohibido fumar en habitaciones y áreas internas
+- Menores de 18 años deben estar acompañados por un adulto responsable"></textarea>
         </div>
+      </div>
 
-        <div class="card">
-          <div class="card-title">Información adicional</div>
-          <div class="field">
-            <label class="label">Descripción del hotel (para el chatbot)</label>
-            <textarea class="textarea" id="hotelDesc" placeholder="Ej: Hotel boutique frente al mar con vista panorámica, a 2 cuadras del centro. Ideal para familias y parejas..."></textarea>
+      <div class="card">
+        <div class="card-title">Idiomas</div>
+        <div class="card-hint">Si activás inglés o portugués, el bot detecta automáticamente el idioma del cliente y responde en ese idioma.</div>
+        <div class="chips" id="langsChips">
+          <div class="chip" data-value="es">🇦🇷 Español</div>
+          <div class="chip" data-value="en">🇺🇸 Inglés</div>
+          <div class="chip" data-value="pt">🇧🇷 Portugués</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════
+         2. PREGUNTAS
+    ═══════════════════════════════ -->
+    <div class="section" id="section-questions">
+      <div class="section-header">
+        <h2>Preguntas sin respuesta</h2>
+        <p>Consultas que el bot no pudo responder. Revisalas periódicamente para mejorar la información del hotel.</p>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-num" id="statTotal">—</div><div class="stat-label">Total registradas</div></div>
+        <div class="stat-card"><div class="stat-num" id="statPending">—</div><div class="stat-label">Sin resolver</div></div>
+        <div class="stat-card"><div class="stat-num" id="statResolved">—</div><div class="stat-label">Resueltas</div></div>
+      </div>
+
+      <div class="card-hint" style="margin-bottom:16px">
+        Cuando una pregunta aparece acá tenés dos opciones:<br>
+        — <strong style="color:var(--text)">Resuelto</strong>: ya agregaste la respuesta en la sección Información del hotel.<br>
+        — <strong style="color:var(--text)">Ignorar</strong>: es una consulta que no corresponde responder por el chatbot.
+      </div>
+
+      <div class="questions-filters">
+        <button class="filter-btn active" onclick="filterQuestions('all',this)">Todas</button>
+        <button class="filter-btn" onclick="filterQuestions('pending',this)">Sin resolver</button>
+        <button class="filter-btn" onclick="filterQuestions('resolved',this)">Resueltas</button>
+        <button class="filter-btn" onclick="filterQuestions('ignored',this)">Ignoradas</button>
+      </div>
+
+      <div class="question-list" id="questionList">
+        <div class="empty-state"><div class="empty-icon">⏳</div><p>Cargando preguntas…</p></div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════
+         3. CONFIGURACIÓN
+    ═══════════════════════════════ -->
+    <div class="section" id="section-config">
+      <div class="section-header">
+        <h2>Configuración del bot</h2>
+        <p>Controlá el estado, el tono y los límites del chatbot.</p>
+      </div>
+
+      <div class="card" style="border-color:var(--border2)">
+        <div class="card-title">Estado del chatbot</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:16px">
+          <div>
+            <div style="font-size:13px;color:var(--text);margin-bottom:4px" id="botStatusLabel">Cargando…</div>
+            <div style="font-size:11px;color:var(--text3);line-height:1.5">Útil para desactivar el bot en temporada alta o cuando preferís atención 100% humana. Cuando está desactivado, usa el mensaje de "no disponible" configurado más abajo.</div>
           </div>
-          <div class="field">
-            <label class="label">Idiomas del chatbot</label>
-            <div class="chips" id="langsChips">
-              <div class="chip" data-value="es">🇦🇷 Español</div>
-              <div class="chip" data-value="en">🇺🇸 Inglés</div>
-              <div class="chip" data-value="pt">🇧🇷 Portugués</div>
-            </div>
+          <div onclick="toggleBot()" style="flex-shrink:0;cursor:pointer">
+            <div class="toggle-track" id="toggleTrack"><div class="toggle-thumb"></div></div>
           </div>
         </div>
       </div>
 
-      <!-- ══ SECCIÓN: PREGUNTAS ══════════════════ -->
-      <div class="section" id="section-questions">
-        <div class="section-header">
-          <h2>Preguntas sin respuesta</h2>
-          <p>Consultas que los clientes hicieron y el bot no pudo responder bien. Usalas para mejorar el chatbot.</p>
+      <div class="card">
+        <div class="card-title">Personalidad</div>
+        <div class="card-hint">
+          Define el tono general con el que el bot se comunica. Elegí el que mejor representa a tu hotel.<br>
+          Podés ajustar detalles puntuales en el campo "Tono adicional" debajo sin cambiar la personalidad general.
         </div>
-
-        <div class="stats-row">
-          <div class="stat-card">
-            <div class="stat-num" id="statTotal">—</div>
-            <div class="stat-label">Total registradas</div>
+        <div class="personality-grid" id="personalityGrid">
+          <div class="personality-card" data-value="formal" onclick="selectPersonality(this)">
+            <div class="p-emoji">🎩</div>
+            <div class="p-name">Formal</div>
+            <div class="p-desc">Profesional y elegante. Trata de "usted". Para hoteles de categoría.</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-num" id="statPending">—</div>
-            <div class="stat-label">Sin resolver</div>
+          <div class="personality-card active" data-value="friendly" onclick="selectPersonality(this)">
+            <div class="p-emoji">😊</div>
+            <div class="p-name">Amigable</div>
+            <div class="p-desc">Cálido y cercano. Trata de "vos". Recomendado para la mayoría de los hoteles.</div>
           </div>
-          <div class="stat-card">
-            <div class="stat-num" id="statResolved">—</div>
-            <div class="stat-label">Resueltas</div>
-          </div>
-        </div>
-
-        <div class="questions-filters">
-          <button class="filter-btn active" onclick="filterQuestions('all', this)">Todas</button>
-          <button class="filter-btn" onclick="filterQuestions('pending', this)">Sin resolver</button>
-          <button class="filter-btn" onclick="filterQuestions('resolved', this)">Resueltas</button>
-          <button class="filter-btn" onclick="filterQuestions('ignored', this)">Ignoradas</button>
-        </div>
-
-        <div class="question-list" id="questionList">
-          <div class="empty-state">
-            <div class="empty-icon">⏳</div>
-            <p>Cargando preguntas…</p>
+          <div class="personality-card" data-value="casual" onclick="selectPersonality(this)">
+            <div class="p-emoji">🤙</div>
+            <div class="p-name">Casual</div>
+            <div class="p-desc">Relajado e informal. Puede usar emojis. Para hostels o alojamientos jóvenes.</div>
           </div>
         </div>
       </div>
 
-      <!-- ══ SECCIÓN: CONFIGURACIÓN ══════════════ -->
-      <div class="section" id="section-config">
-        <div class="section-header">
-          <h2>Configuración del bot</h2>
-          <p>Personalizá cómo responde el chatbot y qué información puede o no compartir.</p>
+      <div class="card">
+        <div class="card-title">Tono adicional <span style="color:var(--text3);font-size:10px;letter-spacing:0;text-transform:none;font-weight:400">— opcional</span></div>
+        <div class="card-hint">
+          Instrucciones específicas que se suman a la personalidad elegida arriba. Usalo para ajustar detalles puntuales.
         </div>
-
-        <div class="card" style="border-color: var(--border2);">
-          <div class="card-title">Estado del chatbot</div>
-          <div style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
-            <div>
-              <div style="font-size:13px; color:var(--text); margin-bottom:3px;" id="botStatusLabel">Cargando…</div>
-              <div style="font-size:11px; color:var(--text3);">Cuando está desactivado, el bot responde que no está disponible y sugiere contactar al hotel directamente.</div>
-            </div>
-            <div class="toggle-wrap" onclick="toggleBot()" id="botToggle" style="flex-shrink:0; cursor:pointer;">
-              <div class="toggle-track" id="toggleTrack">
-                <div class="toggle-thumb" id="toggleThumb"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Personalidad</div>
-          <div class="personality-grid" id="personalityGrid">
-            <div class="personality-card" data-value="formal" onclick="selectPersonality(this)">
-              <div class="p-emoji">🎩</div>
-              <div class="p-name">Formal</div>
-              <div class="p-desc">Profesional y elegante. Ideal para hoteles de lujo.</div>
-            </div>
-            <div class="personality-card active" data-value="friendly" onclick="selectPersonality(this)">
-              <div class="p-emoji">😊</div>
-              <div class="p-name">Amigable</div>
-              <div class="p-desc">Cálido y cercano. Buena opción para la mayoría.</div>
-            </div>
-            <div class="personality-card" data-value="casual" onclick="selectPersonality(this)">
-              <div class="p-emoji">🤙</div>
-              <div class="p-name">Casual</div>
-              <div class="p-desc">Relajado e informal. Para hoteles jóvenes y hostels.</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Tono personalizado (opcional)</div>
-          <div class="field">
-            <label class="label">Instrucción de tono adicional</label>
-            <textarea class="textarea" id="customTone" placeholder="Ej: Siempre tuteá al cliente. Usá emojis ocasionalmente. Sé muy conciso, máximo 2 oraciones por respuesta."></textarea>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Información que el bot NO puede revelar</div>
-          <p style="font-size:11.5px; color:var(--text2); margin-bottom:14px; line-height:1.5;">
-            El bot nunca va a mencionar estos temas aunque el cliente los pregunte directamente.
-          </p>
-          <div class="forbidden-list" id="forbiddenList"></div>
-          <div class="add-row">
-            <input class="input" id="newForbidden" placeholder="Ej: precios de temporada anterior, descuentos especiales..." />
-            <button class="btn btn-ghost" onclick="addForbidden()">+ Agregar</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Mensaje de bienvenida</div>
-          <div class="field">
-            <label class="label">Primer mensaje que ve el cliente</label>
-            <textarea class="textarea" id="welcomeMsg" placeholder="Ej: ¡Bienvenido/a al Hotel La Serena! 🌊 Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?"></textarea>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-title">Mensaje cuando no puede responder</div>
-          <div class="field">
-            <label class="label">Respuesta para consultas fuera de tema</label>
-            <textarea class="textarea" id="fallbackMsg" placeholder="Ej: Esa consulta está fuera de mis posibilidades, pero podés contactarnos directamente al teléfono o por email."></textarea>
-          </div>
+        <div class="field">
+          <textarea class="textarea" id="customTone"
+            placeholder="Ejemplos:
+- Sé muy breve. Máximo 1 oración por respuesta, salvo cuando cotizás precios
+- No uses emojis en ningún caso
+- Si el cliente saluda, respondé el saludo antes de responder la consulta
+- Cuando no sepas algo, siempre ofrecé contactar al hotel por WhatsApp"></textarea>
+          <div class="field-help">Tip: instrucciones cortas y específicas funcionan mejor que párrafos largos.</div>
         </div>
       </div>
 
-    </div><!-- /content -->
-  </div><!-- /main -->
-</div><!-- /app -->
+      <div class="card">
+        <div class="card-title">Información que el bot NO puede revelar</div>
+        <div class="card-hint">
+          Temas que el bot debe ignorar aunque el cliente los pregunte directamente. El bot responderá que no tiene esa información disponible.
+        </div>
+        <div class="field-help" style="margin-bottom:12px;color:var(--text2)">
+          Ejemplos: "descuentos especiales para grupos", "tarifas de temporada anterior", "datos del propietario", "capacidad máxima del hotel".
+        </div>
+        <div class="forbidden-list" id="forbiddenList"></div>
+        <div class="add-row">
+          <input class="input" id="newForbidden" placeholder="Escribí el tema a bloquear y presioná Enter" />
+          <button class="btn btn-ghost" onclick="addForbidden()">+ Agregar</button>
+        </div>
+      </div>
 
-<!-- TOAST -->
-<div class="toast" id="toast">
-  <div class="toast-dot"></div>
-  <span id="toastMsg">Guardado</span>
+      <div class="card">
+        <div class="card-title">Mensaje de bienvenida</div>
+        <div class="card-hint">
+          Primer mensaje que ve el cliente al abrir el chat. Si lo dejás vacío se usa el mensaje por defecto del sistema.
+        </div>
+        <div class="field">
+          <textarea class="textarea" id="welcomeMsg"
+            placeholder="Ej: ¡Hola! Soy el asistente virtual del Hotel La Serena. Puedo ayudarte con precios, habitaciones y consultas de reserva. ¿En qué te puedo ayudar?"></textarea>
+          <div class="field-help">Tip: mencioná qué puede hacer el bot para que el cliente sepa qué preguntar. No pongas información de contacto acá — el bot la comparte automáticamente cuando corresponde.</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Mensaje cuando no puede responder</div>
+        <div class="card-hint">
+          Se muestra cuando el cliente pregunta algo fuera del alcance del bot, o cuando el bot está desactivado. Aprovechalo para redirigir al cliente.
+        </div>
+        <div class="field">
+          <textarea class="textarea" id="fallbackMsg"
+            placeholder="Ej: Esa consulta está fuera de lo que puedo responder. Para más información contactanos directamente por WhatsApp o al teléfono del hotel."></textarea>
+          <div class="field-help">Si tenés el WhatsApp cargado en Datos de contacto, el bot incluye el link automáticamente al mencionar contacto.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
 </div>
 
+<div class="toast" id="toast"><div class="toast-dot"></div><span id="toastMsg">Guardado</span></div>
+
 <script>
-// ── CONFIG ────────────────────────────────────────
-const SUPABASE_URL = 'https://ozjqqgwcztuummvwpgfu.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96anFxZ3djenR1dW1tdndwZ2Z1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MTA3NzIsImV4cCI6MjA2NjQ4Njc3Mn0.7L7TliaKQllfY4nF5J8Kh3D0TkeVFoPLjbt2nQ0Er0o';
+const SB_URL = 'https://ozjqqgwcztuummvwpgfu.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96anFxZ3djenR1dW1tdndwZ2Z1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MTA3NzIsImV4cCI6MjA2NjQ4Njc3Mn0.7L7TliaKQllfY4nF5J8Kh3D0TkeVFoPLjbt2nQ0Er0o';
 
-const SECTION_TITLES = {
-  info: 'Información del hotel',
-  questions: 'Preguntas sin respuesta',
-  config: 'Configuración del bot'
-};
+const TITLES = { info:'Información del hotel', questions:'Preguntas sin respuesta', config:'Configuración del bot' };
+let currentSection='info', allQuestions=[], currentFilter='all', forbiddenItems=[], botEnabled=true;
 
-let currentSection = 'info';
-let allQuestions = [];
-let currentFilter = 'all';
-let forbiddenItems = [];
-
-// ── SUPABASE ──────────────────────────────────────
-async function dbGet(table, select = '*', params = '') {
-  const url = `${SUPABASE_URL}/rest/v1/${table}?select=${encodeURIComponent(select)}${params}`;
-  const res = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
-  return res.json();
+async function dbGet(t,s='*',p=''){
+  const r=await fetch(`${SB_URL}/rest/v1/${t}?select=${encodeURIComponent(s)}${p}`,{headers:{apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`}});
+  return r.json();
+}
+async function dbUpsert(t,d){
+  const r=await fetch(`${SB_URL}/rest/v1/${t}`,{method:'POST',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`,Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(d)});
+  return r.ok;
+}
+async function dbPatch(t,id,d){
+  const r=await fetch(`${SB_URL}/rest/v1/${t}?id=eq.${id}`,{method:'PATCH',headers:{'Content-Type':'application/json',apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`,Prefer:'return=minimal'},body:JSON.stringify(d)});
+  return r.ok;
 }
 
-async function dbUpsert(table, data) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      Prefer: 'resolution=merge-duplicates,return=minimal'
-    },
-    body: JSON.stringify(data)
-  });
-  return res.ok;
-}
-
-async function dbUpdate(table, id, data) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: SUPABASE_KEY,
-      Authorization: `Bearer ${SUPABASE_KEY}`,
-      Prefer: 'return=minimal'
-    },
-    body: JSON.stringify(data)
-  });
-  return res.ok;
-}
-
-// ── NAVIGATION ────────────────────────────────────
-function switchSection(name, el) {
-  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+function switchSection(name,el){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   document.getElementById(`section-${name}`).classList.add('active');
   el.classList.add('active');
-  document.getElementById('topbarTitle').textContent = SECTION_TITLES[name];
-  currentSection = name;
-  if (name === 'questions') loadQuestions();
+  document.getElementById('topbarTitle').textContent=TITLES[name];
+  currentSection=name;
+  if(name==='questions') loadQuestions();
 }
 
-// ── TOAST ─────────────────────────────────────────
 let toastTimer;
-function showToast(msg, type = 'success') {
-  const t = document.getElementById('toast');
-  document.getElementById('toastMsg').textContent = msg;
-  t.className = `toast ${type} show`;
+function showToast(msg,type='success'){
+  const t=document.getElementById('toast');
+  document.getElementById('toastMsg').textContent=msg;
+  t.className=`toast ${type} show`;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
 }
 
-// ── CHIPS ─────────────────────────────────────────
-function initChips(containerId) {
-  document.querySelectorAll(`#${containerId} .chip`).forEach(chip => {
-    chip.addEventListener('click', () => chip.classList.toggle('active'));
-  });
+function initChips(id){document.querySelectorAll(`#${id} .chip`).forEach(c=>c.addEventListener('click',()=>c.classList.toggle('active')))}
+function getActiveChips(id){return Array.from(document.querySelectorAll(`#${id} .chip.active`)).map(c=>c.dataset.value)}
+function setActiveChips(id,vals){document.querySelectorAll(`#${id} .chip`).forEach(c=>c.classList.toggle('active',vals.includes(c.dataset.value)))}
+
+function selectPersonality(el){document.querySelectorAll('.personality-card').forEach(c=>c.classList.remove('active'));el.classList.add('active')}
+function getPersonality(){const a=document.querySelector('.personality-card.active');return a?a.dataset.value:'friendly'}
+function setPersonality(v){document.querySelectorAll('.personality-card').forEach(c=>c.classList.toggle('active',c.dataset.value===v))}
+
+function renderForbidden(){
+  const list=document.getElementById('forbiddenList');
+  if(!forbiddenItems.length){list.innerHTML='<p style="font-size:12px;color:var(--text3);padding:8px 0">Sin restricciones configuradas.</p>';return}
+  list.innerHTML=forbiddenItems.map((item,i)=>`<div class="forbidden-item"><div class="forbidden-dot"></div><span>${escHtml(item)}</span><button onclick="removeForbidden(${i})" title="Eliminar">✕</button></div>`).join('');
+}
+function addForbidden(){const inp=document.getElementById('newForbidden');const v=inp.value.trim();if(!v)return;forbiddenItems.push(v);inp.value='';renderForbidden()}
+function removeForbidden(i){forbiddenItems.splice(i,1);renderForbidden()}
+document.getElementById('newForbidden').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();addForbidden()}});
+
+function renderToggle(enabled){
+  botEnabled=enabled;
+  const track=document.getElementById('toggleTrack');
+  const label=document.getElementById('botStatusLabel');
+  if(!track) return;
+  track.classList.toggle('on',enabled);
+  label.textContent=enabled?'Chatbot activado':'Chatbot desactivado';
+  label.style.color=enabled?'var(--green)':'var(--red)';
+}
+async function toggleBot(){
+  const n=!botEnabled;
+  renderToggle(n);
+  const ok=await dbUpsert('settings',[{key:'bot_enabled',value:n?'true':'false'}]);
+  if(ok){showToast(n?'✓ Chatbot activado':'Chatbot desactivado',n?'success':'error')}
+  else{renderToggle(!n);showToast('Error al guardar','error')}
 }
 
-function getActiveChips(containerId) {
-  return Array.from(document.querySelectorAll(`#${containerId} .chip.active`))
-    .map(c => c.dataset.value);
+async function loadData(){
+  const data=await dbGet('settings','key,value');
+  if(!Array.isArray(data)) return;
+  const map={};
+  data.forEach(r=>{map[r.key]=r.value});
+  const set=(id,key)=>{const el=document.getElementById(id);if(el&&map[key]!==undefined)el.value=map[key]||''};
+  set('hotelName','hotel_name'); set('hotelPhone','hotel_phone'); set('hotelWhatsapp','hotel_whatsapp');
+  set('hotelAddress','hotel_address'); set('hotelEmail','hotel_email');
+  set('checkinTime','checkin_time'); set('checkoutTime','checkout_time');
+  set('receptionHours','reception_hours'); set('hotelDesc','hotel_description');
+  set('hotelServices','hotel_services'); set('hotelPolicies','hotel_policies');
+  set('customTone','bot_custom_tone'); set('welcomeMsg','bot_welcome_msg'); set('fallbackMsg','bot_fallback_msg');
+  try{setActiveChips('langsChips',JSON.parse(map['bot_languages']||'["es"]'))}catch(e){}
+  try{forbiddenItems=JSON.parse(map['bot_forbidden']||'[]');renderForbidden()}catch(e){}
+  if(map['bot_personality']) setPersonality(map['bot_personality']);
+  renderToggle(map['bot_enabled']!=='false');
 }
 
-function setActiveChips(containerId, values) {
-  document.querySelectorAll(`#${containerId} .chip`).forEach(chip => {
-    chip.classList.toggle('active', values.includes(chip.dataset.value));
-  });
-}
-
-// ── PERSONALITY ───────────────────────────────────
-function selectPersonality(el) {
-  document.querySelectorAll('.personality-card').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-}
-
-function getPersonality() {
-  const active = document.querySelector('.personality-card.active');
-  return active ? active.dataset.value : 'friendly';
-}
-
-function setPersonality(val) {
-  document.querySelectorAll('.personality-card').forEach(c => {
-    c.classList.toggle('active', c.dataset.value === val);
-  });
-}
-
-// ── FORBIDDEN ─────────────────────────────────────
-function renderForbidden() {
-  const list = document.getElementById('forbiddenList');
-  if (forbiddenItems.length === 0) {
-    list.innerHTML = '<p style="font-size:12px;color:var(--text3);padding:8px 0;">Sin restricciones configuradas.</p>';
-    return;
-  }
-  list.innerHTML = forbiddenItems.map((item, i) => `
-    <div class="forbidden-item">
-      <div class="forbidden-dot"></div>
-      <span>${escHtml(item)}</span>
-      <button onclick="removeForbidden(${i})" title="Eliminar">✕</button>
-    </div>
-  `).join('');
-}
-
-function addForbidden() {
-  const input = document.getElementById('newForbidden');
-  const val = input.value.trim();
-  if (!val) return;
-  forbiddenItems.push(val);
-  input.value = '';
-  renderForbidden();
-}
-
-function removeForbidden(i) {
-  forbiddenItems.splice(i, 1);
-  renderForbidden();
-}
-
-document.getElementById('newForbidden').addEventListener('keydown', e => {
-  if (e.key === 'Enter') { e.preventDefault(); addForbidden(); }
-});
-
-// ── LOAD DATA ─────────────────────────────────────
-async function loadData() {
-  const data = await dbGet('settings', 'key,value');
-  if (!Array.isArray(data)) return;
-
-  const map = {};
-  data.forEach(row => { map[row.key] = row.value; });
-
-  const set = (id, key) => { if (map[key] !== undefined) document.getElementById(id).value = map[key] || ''; };
-
-  set('hotelName',      'hotel_name');
-  set('hotelPhone',     'hotel_phone');
-  set('hotelWhatsapp',  'hotel_whatsapp');
-  set('hotelAddress',   'hotel_address');
-  set('hotelEmail',     'hotel_email');
-  set('checkinTime',    'checkin_time');
-  set('checkoutTime',   'checkout_time');
-  set('receptionHours', 'reception_hours');
-  set('hotelDesc',      'hotel_description');
-  set('hotelServices',  'hotel_services');
-  set('hotelPolicies',  'hotel_policies');
-  set('customTone',     'bot_custom_tone');
-  set('welcomeMsg',     'bot_welcome_msg');
-  set('fallbackMsg',    'bot_fallback_msg');
-
-  try { setActiveChips('langsChips', JSON.parse(map['bot_languages'] || '["es"]')); } catch(e){}
-  try { forbiddenItems = JSON.parse(map['bot_forbidden'] || '[]'); renderForbidden(); } catch(e){}
-
-  renderToggle(map['bot_enabled'] !== 'false');
-
-  if (map['bot_personality']) setPersonality(map['bot_personality']);
-}
-
-// ── SAVE ──────────────────────────────────────────
-async function saveCurrentSection() {
-  const btn = document.getElementById('saveBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>';
-
-  let rows = [];
-
-  if (currentSection === 'info') {
-    rows = [
-      { key: 'hotel_name',        value: document.getElementById('hotelName').value },
-      { key: 'hotel_phone',       value: document.getElementById('hotelPhone').value },
-      { key: 'hotel_whatsapp',    value: document.getElementById('hotelWhatsapp').value },
-      { key: 'hotel_address',     value: document.getElementById('hotelAddress').value },
-      { key: 'hotel_email',       value: document.getElementById('hotelEmail').value },
-      { key: 'checkin_time',      value: document.getElementById('checkinTime').value },
-      { key: 'checkout_time',     value: document.getElementById('checkoutTime').value },
-      { key: 'reception_hours',   value: document.getElementById('receptionHours').value },
-      { key: 'hotel_description', value: document.getElementById('hotelDesc').value },
-      { key: 'hotel_services',    value: document.getElementById('hotelServices').value },
-      { key: 'hotel_policies',    value: document.getElementById('hotelPolicies').value },
-      { key: 'bot_languages',     value: JSON.stringify(getActiveChips('langsChips')) },
+async function saveCurrentSection(){
+  const btn=document.getElementById('saveBtn');
+  btn.disabled=true; btn.textContent='…';
+  let rows=[];
+  if(currentSection==='info'){
+    rows=[
+      {key:'hotel_name',value:document.getElementById('hotelName').value},
+      {key:'hotel_phone',value:document.getElementById('hotelPhone').value},
+      {key:'hotel_whatsapp',value:document.getElementById('hotelWhatsapp').value},
+      {key:'hotel_address',value:document.getElementById('hotelAddress').value},
+      {key:'hotel_email',value:document.getElementById('hotelEmail').value},
+      {key:'checkin_time',value:document.getElementById('checkinTime').value},
+      {key:'checkout_time',value:document.getElementById('checkoutTime').value},
+      {key:'reception_hours',value:document.getElementById('receptionHours').value},
+      {key:'hotel_description',value:document.getElementById('hotelDesc').value},
+      {key:'hotel_services',value:document.getElementById('hotelServices').value},
+      {key:'hotel_policies',value:document.getElementById('hotelPolicies').value},
+      {key:'bot_languages',value:JSON.stringify(getActiveChips('langsChips'))},
     ];
   }
-
-  if (currentSection === 'config') {
-    rows = [
-      { key: 'bot_personality',  value: getPersonality() },
-      { key: 'bot_custom_tone',  value: document.getElementById('customTone').value },
-      { key: 'bot_welcome_msg',  value: document.getElementById('welcomeMsg').value },
-      { key: 'bot_fallback_msg', value: document.getElementById('fallbackMsg').value },
-      { key: 'bot_forbidden',    value: JSON.stringify(forbiddenItems) },
+  if(currentSection==='config'){
+    rows=[
+      {key:'bot_personality',value:getPersonality()},
+      {key:'bot_custom_tone',value:document.getElementById('customTone').value},
+      {key:'bot_welcome_msg',value:document.getElementById('welcomeMsg').value},
+      {key:'bot_fallback_msg',value:document.getElementById('fallbackMsg').value},
+      {key:'bot_forbidden',value:JSON.stringify(forbiddenItems)},
     ];
   }
-
-  if (rows.length > 0) {
-    const ok = await dbUpsert('settings', rows);
-    if (ok) {
-      showToast('✓ Cambios guardados correctamente');
-    } else {
-      showToast('Error al guardar. Revisá la conexión.', 'error');
-    }
+  if(rows.length>0){
+    const ok=await dbUpsert('settings',rows);
+    showToast(ok?'✓ Cambios guardados':'Error al guardar. Revisá la conexión.',ok?'success':'error');
   }
-
-  btn.disabled = false;
-  btn.textContent = 'Guardar cambios';
+  btn.disabled=false; btn.textContent='Guardar cambios';
 }
 
-// ── QUESTIONS ─────────────────────────────────────
-async function loadQuestions() {
-  const data = await dbGet('chatbot_unanswered', '*', '&order=created_at.desc');
-
-  if (!Array.isArray(data) || data.error) {
-    // Tabla no existe todavía — mostrar estado vacío con instrucciones
-    document.getElementById('questionList').innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📋</div>
-        <p>La tabla <strong>chatbot_unanswered</strong> todavía no existe.<br>
-        Ejecutá el SQL del README para activar este módulo.</p>
-      </div>`;
-    document.getElementById('statTotal').textContent = '0';
-    document.getElementById('statPending').textContent = '0';
-    document.getElementById('statResolved').textContent = '0';
+async function loadQuestions(){
+  const data=await dbGet('chatbot_unanswered','*','&order=created_at.desc');
+  if(!Array.isArray(data)||data.error){
+    document.getElementById('questionList').innerHTML=`<div class="empty-state"><div class="empty-icon">📋</div><p>La tabla <strong>chatbot_unanswered</strong> no existe aún.<br>Ejecutá el SQL del README para activarla.</p></div>`;
+    ['statTotal','statPending','statResolved'].forEach(id=>{document.getElementById(id).textContent='0'});
     return;
   }
-
-  allQuestions = data;
-  updateStats();
-  renderQuestions();
-  updateBadge();
+  allQuestions=data; updateStats(); renderQuestions(); updateBadge();
 }
 
-function updateStats() {
-  const total    = allQuestions.length;
-  const pending  = allQuestions.filter(q => q.status === 'pending').length;
-  const resolved = allQuestions.filter(q => q.status === 'resolved').length;
-  document.getElementById('statTotal').textContent    = total;
-  document.getElementById('statPending').textContent  = pending;
-  document.getElementById('statResolved').textContent = resolved;
+function updateStats(){
+  document.getElementById('statTotal').textContent=allQuestions.length;
+  document.getElementById('statPending').textContent=allQuestions.filter(q=>q.status==='pending').length;
+  document.getElementById('statResolved').textContent=allQuestions.filter(q=>q.status==='resolved').length;
 }
-
-function updateBadge() {
-  const pending = allQuestions.filter(q => q.status === 'pending').length;
-  const badge = document.getElementById('badgeCount');
-  if (pending > 0) {
-    badge.textContent = pending;
-    badge.style.display = '';
-  } else {
-    badge.style.display = 'none';
-  }
+function updateBadge(){
+  const n=allQuestions.filter(q=>q.status==='pending').length;
+  const b=document.getElementById('badgeCount'); b.textContent=n; b.style.display=n>0?'':'none';
 }
-
-function filterQuestions(filter, el) {
-  currentFilter = filter;
-  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  el.classList.add('active');
-  renderQuestions();
+function filterQuestions(f,el){
+  currentFilter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active'); renderQuestions();
 }
-
-function renderQuestions() {
-  const list = document.getElementById('questionList');
-  let filtered = allQuestions;
-  if (currentFilter !== 'all') filtered = allQuestions.filter(q => q.status === currentFilter);
-
-  if (filtered.length === 0) {
-    list.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><p>No hay preguntas en esta categoría.</p></div>`;
-    return;
-  }
-
-  list.innerHTML = filtered.map(q => {
-    const date = new Date(q.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
-    const isP = q.status === 'pending';
-    const isI = q.status === 'ignored';
-    const iconClass = isP ? 'unanswered' : isI ? 'ignored' : 'added';
-    const icon = isP ? '?' : isI ? '–' : '✓';
-    return `
-      <div class="question-item" id="q-${q.id}">
-        <div class="q-icon ${iconClass}">${icon}</div>
-        <div class="q-body">
-          <div class="q-text">${escHtml(q.question)}</div>
-          <div class="q-meta">
-            <span>📅 ${date}</span>
-            ${q.frequency > 1 ? `<span>🔁 ${q.frequency} veces</span>` : ''}
-            ${q.context ? `<span>💬 "${escHtml(q.context.substring(0,40))}…"</span>` : ''}
-          </div>
-        </div>
-        ${isP ? `
-        <div class="q-actions">
-          <button class="q-btn resolve" onclick="resolveQuestion(${q.id})">✓ Resuelto</button>
-          <button class="q-btn ignore" onclick="ignoreQuestion(${q.id})">Ignorar</button>
-        </div>` : ''}
-      </div>`;
+function renderQuestions(){
+  const list=document.getElementById('questionList');
+  const filtered=currentFilter==='all'?allQuestions:allQuestions.filter(q=>q.status===currentFilter);
+  if(!filtered.length){list.innerHTML=`<div class="empty-state"><div class="empty-icon">✅</div><p>No hay preguntas en esta categoría.</p></div>`;return}
+  list.innerHTML=filtered.map(q=>{
+    const date=new Date(q.created_at).toLocaleDateString('es-AR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'});
+    const isP=q.status==='pending', isI=q.status==='ignored';
+    return `<div class="question-item">
+      <div class="q-icon ${isP?'unanswered':isI?'ignored':'added'}">${isP?'?':isI?'–':'✓'}</div>
+      <div class="q-body">
+        <div class="q-text">${escHtml(q.question)}</div>
+        <div class="q-meta"><span>📅 ${date}</span>${q.frequency>1?`<span>🔁 ${q.frequency} veces</span>`:''}${q.context?`<span>Contexto: "${escHtml(q.context.substring(0,50))}…"</span>`:''}</div>
+      </div>
+      ${isP?`<div class="q-actions"><button class="q-btn resolve" onclick="resolveQuestion(${q.id})">✓ Resuelto</button><button class="q-btn ignore" onclick="ignoreQuestion(${q.id})">Ignorar</button></div>`:''}
+    </div>`;
   }).join('');
 }
+async function resolveQuestion(id){await dbPatch('chatbot_unanswered',id,{status:'resolved'});allQuestions=allQuestions.map(q=>q.id===id?{...q,status:'resolved'}:q);updateStats();renderQuestions();updateBadge();showToast('Marcado como resuelto')}
+async function ignoreQuestion(id){await dbPatch('chatbot_unanswered',id,{status:'ignored'});allQuestions=allQuestions.map(q=>q.id===id?{...q,status:'ignored'}:q);updateStats();renderQuestions();updateBadge()}
 
-async function resolveQuestion(id) {
-  await dbUpdate('chatbot_unanswered', id, { status: 'resolved' });
-  allQuestions = allQuestions.map(q => q.id === id ? {...q, status:'resolved'} : q);
-  updateStats();
-  renderQuestions();
-  updateBadge();
-  showToast('Marcado como resuelto');
-}
+function escHtml(str){if(!str)return'';return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
 
-async function ignoreQuestion(id) {
-  await dbUpdate('chatbot_unanswered', id, { status: 'ignored' });
-  allQuestions = allQuestions.map(q => q.id === id ? {...q, status:'ignored'} : q);
-  updateStats();
-  renderQuestions();
-  updateBadge();
-}
-
-// ── BOT TOGGLE ────────────────────────────────────────
-let botEnabled = true;
-
-function renderToggle(enabled) {
-  botEnabled = enabled;
-  const track = document.getElementById('toggleTrack');
-  const label = document.getElementById('botStatusLabel');
-  if (!track) return;
-  track.classList.toggle('on', enabled);
-  label.textContent = enabled ? 'Chatbot activado' : 'Chatbot desactivado';
-  label.style.color = enabled ? 'var(--green)' : 'var(--red)';
-}
-
-async function toggleBot() {
-  const newState = !botEnabled;
-  renderToggle(newState);
-  const ok = await dbUpsert('settings', [{ key: 'bot_enabled', value: newState ? 'true' : 'false' }]);
-  if (ok) {
-    showToast(newState ? '✓ Chatbot activado' : 'Chatbot desactivado', newState ? 'success' : 'info');
-  } else {
-    renderToggle(!newState); // revertir si falló
-    showToast('Error al guardar', 'error');
-  }
-}
-
-// ── UTILS ─────────────────────────────────────────
-function escHtml(str) {
-  if (!str) return '';
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-}
-
-// ── LOGIN ──────────────────────────────────────────
-const LOGIN_HTML = `
+// ── LOGIN ─────────────────────────────────────────────
+document.body.insertAdjacentHTML('beforeend',`
 <div id="loginScreen" style="position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;">
   <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:36px 32px;width:320px;text-align:center;">
     <div style="font-family:'Instrument Serif',serif;font-size:22px;color:var(--gold);margin-bottom:6px;">Hotel Admin</div>
     <div style="font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:28px;">Panel de control</div>
-    <input type="password" id="pinInput" placeholder="Contraseña" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:10px 14px;font-family:'Geist Mono',monospace;font-size:14px;color:var(--text);outline:none;text-align:center;letter-spacing:.15em;margin-bottom:10px;"
+    <input type="password" id="pinInput" placeholder="Contraseña"
+      style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:10px 14px;font-family:'Geist Mono',monospace;font-size:14px;color:var(--text);outline:none;text-align:center;letter-spacing:.15em;margin-bottom:10px;"
       onkeydown="if(event.key==='Enter')checkPin()" />
     <div id="pinError" style="font-size:11px;color:var(--red);min-height:16px;margin-bottom:10px;"></div>
     <button onclick="checkPin()" style="width:100%;background:var(--gold);color:#0a0a0a;border:none;border-radius:var(--radius-sm);padding:10px;font-family:'Geist Mono',monospace;font-size:12px;font-weight:500;cursor:pointer;letter-spacing:.05em;">Ingresar</button>
   </div>
-</div>`;
+</div>`);
 
-document.body.insertAdjacentHTML('beforeend', LOGIN_HTML);
-
-async function checkPin() {
-  const input = document.getElementById('pinInput').value.trim();
-  if (!input) return;
-  // Leer cleaning_pin de Supabase
-  const data = await dbGet('settings', 'value', `&key=eq.cleaning_pin`);
-  const correctPin = Array.isArray(data) && data[0] ? data[0].value : null;
-  if (!correctPin || input === correctPin) {
+async function checkPin(){
+  const input=document.getElementById('pinInput').value.trim();
+  if(!input) return;
+  const data=await dbGet('settings','value','&key=eq.cleaning_pin');
+  const correct=Array.isArray(data)&&data[0]?data[0].value:null;
+  if(!correct||input===correct){
     document.getElementById('loginScreen').remove();
     initAdmin();
   } else {
-    document.getElementById('pinError').textContent = 'Contraseña incorrecta.';
-    document.getElementById('pinInput').value = '';
+    document.getElementById('pinError').textContent='Contraseña incorrecta.';
+    document.getElementById('pinInput').value='';
     document.getElementById('pinInput').focus();
   }
 }
 
-function initAdmin() {
-  initChips('servicesChips');
-  initChips('policiesChips');
+function initAdmin(){
   initChips('langsChips');
   renderForbidden();
   loadData();
