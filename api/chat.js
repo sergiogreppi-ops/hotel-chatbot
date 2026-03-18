@@ -28,18 +28,6 @@ function fmt(n) {
   return n && n > 0 ? "$" + Math.round(n).toLocaleString("es-AR") : null;
 }
 
-const SERVICE_LABELS = {
-  wifi: "WiFi gratuito", parking: "Estacionamiento", pool: "Pileta/piscina",
-  breakfast: "Desayuno incluido", restaurant: "Restaurante", gym: "Gimnasio",
-  spa: "Spa", bar: "Bar", laundry: "Lavandería", transfer: "Transfer al aeropuerto",
-  roomservice: "Room service", bbq: "Parrilla/BBQ",
-};
-const POLICY_LABELS = {
-  pets: "Se aceptan mascotas", nosmoking: "No se permite fumar",
-  smoking: "Hay área de fumadores", kids: "Apto para niños",
-  adults: "Solo adultos (+18)", events: "Se permiten eventos",
-  noevents: "No se permiten eventos ni fiestas",
-};
 const PERSONALITY_PROMPTS = {
   formal: "Usá un tono formal, profesional y elegante. Tratá al cliente de 'usted'.",
   friendly: "Usá un tono amigable y cálido. Tratá al cliente de 'vos'.",
@@ -50,24 +38,23 @@ function buildSystemPrompt(settings, rooms, prices) {
   const today = new Date().toISOString().split("T")[0];
   const hotelName    = settings["hotel_name"]        || "el hotel";
   const hotelPhone   = settings["hotel_phone"]        || "";
+  const hotelWhatsapp= settings["hotel_whatsapp"]     || "";
   const hotelAddress = settings["hotel_address"]      || "";
   const hotelEmail   = settings["hotel_email"]        || "";
   const checkin      = settings["checkin_time"]       || "";
   const checkout     = settings["checkout_time"]      || "";
   const reception    = settings["reception_hours"]    || "";
   const description  = settings["hotel_description"]  || "";
+  const services     = settings["hotel_services"]     || "";
+  const policies     = settings["hotel_policies"]     || "";
   const personality  = settings["bot_personality"]    || "friendly";
   const customTone   = settings["bot_custom_tone"]    || "";
   const fallback     = settings["bot_fallback_msg"]   || "Esa consulta está fuera de mis posibilidades. Podés contactarnos directamente.";
   const forbidden    = JSON.parse(settings["bot_forbidden"]   || "[]");
-  const services     = JSON.parse(settings["hotel_services"]  || "[]");
-  const policies     = JSON.parse(settings["hotel_policies"]  || "[]");
   const languages    = JSON.parse(settings["bot_languages"]   || '["es"]');
 
-  const servicesList = services.map(s => SERVICE_LABELS[s] || s).join(", ") || "consultar al hotel";
-  const policiesList = policies.map(p => POLICY_LABELS[p] || p).join(". ");
-  const langNote     = languages.includes("en") ? " Si el cliente escribe en inglés, respondé en inglés." : "";
-  const langNoteP    = languages.includes("pt") ? " Si el cliente escribe en portugués, respondé en portugués." : "";
+  const langNote  = languages.includes("en") ? " Si el cliente escribe en inglés, respondé en inglés." : "";
+  const langNoteP = languages.includes("pt") ? " Si el cliente escribe en portugués, respondé en portugués." : "";
 
   const priceLines = Object.entries(prices)
     .slice(0, 60)
@@ -86,14 +73,15 @@ PERSONALIDAD: ${PERSONALITY_PROMPTS[personality] || PERSONALITY_PROMPTS.friendly
 INFORMACIÓN DEL HOTEL:
 - Nombre: ${hotelName}
 ${hotelAddress ? `- Dirección: ${hotelAddress}` : ""}
-${hotelPhone ? `- Teléfono: ${hotelPhone}` : ""}
+${hotelPhone ? `- Teléfono para llamadas: ${hotelPhone}` : ""}
+${hotelWhatsapp ? `- WhatsApp para mensajes: ${hotelWhatsapp}` : ""}
 ${hotelEmail ? `- Email: ${hotelEmail}` : ""}
 ${checkin ? `- Check-in: ${checkin}` : ""}
 ${checkout ? `- Check-out: ${checkout}` : ""}
 ${reception ? `- Recepción: ${reception}` : ""}
 ${description ? `- Descripción: ${description}` : ""}
-- Servicios: ${servicesList}
-${policiesList ? `- Políticas: ${policiesList}` : ""}
+${services ? `\nSERVICIOS:\n${services}` : ""}
+${policies ? `\nPOLÍTICAS:\n${policies}` : ""}
 ${forbiddenBlock}
 
 HABITACIONES: ${roomList}

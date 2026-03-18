@@ -499,14 +499,18 @@ body {
 
         <div class="card">
           <div class="card-title">Datos generales</div>
+          <div class="field">
+            <label class="label">Nombre del hotel</label>
+            <input class="input" id="hotelName" placeholder="Ej: Hotel La Serena" />
+          </div>
           <div class="field-row">
             <div class="field">
-              <label class="label">Nombre del hotel</label>
-              <input class="input" id="hotelName" placeholder="Ej: Hotel La Serena" />
+              <label class="label">📞 Teléfono (llamadas)</label>
+              <input class="input" id="hotelPhone" placeholder="Ej: +54 11 1234-5678" />
             </div>
             <div class="field">
-              <label class="label">Teléfono</label>
-              <input class="input" id="hotelPhone" placeholder="Ej: +54 11 1234-5678" />
+              <label class="label">💬 WhatsApp (mensajes)</label>
+              <input class="input" id="hotelWhatsapp" placeholder="Ej: +54 9 11 1234-5678" />
             </div>
           </div>
           <div class="field">
@@ -539,32 +543,35 @@ body {
 
         <div class="card">
           <div class="card-title">Servicios disponibles</div>
-          <div class="chips" id="servicesChips">
-            <div class="chip" data-value="wifi">📶 WiFi</div>
-            <div class="chip" data-value="parking">🚗 Parking</div>
-            <div class="chip" data-value="pool">🏊 Pileta</div>
-            <div class="chip" data-value="breakfast">🍳 Desayuno</div>
-            <div class="chip" data-value="restaurant">🍽️ Restaurante</div>
-            <div class="chip" data-value="gym">💪 Gimnasio</div>
-            <div class="chip" data-value="spa">🧖 Spa</div>
-            <div class="chip" data-value="bar">🍹 Bar</div>
-            <div class="chip" data-value="laundry">👕 Lavandería</div>
-            <div class="chip" data-value="transfer">🚌 Transfer</div>
-            <div class="chip" data-value="roomservice">🛎️ Room service</div>
-            <div class="chip" data-value="bbq">🔥 Parrilla/BBQ</div>
+          <p style="font-size:11.5px;color:var(--text2);margin-bottom:12px;line-height:1.6;">
+            Describí los servicios con el detalle que quieras. La IA los va a interpretar y usar para responder preguntas de los clientes.
+          </p>
+          <div class="field">
+            <textarea class="textarea" id="hotelServices" style="min-height:120px;"
+              placeholder="Ej:
+- WiFi gratuito en todas las habitaciones y áreas comunes
+- Pileta al aire libre, disponible de 8 a 20 hs
+- Desayuno continental incluido de 7:30 a 10:30 hs
+- Estacionamiento privado sin costo adicional
+- Room service de 12 a 23 hs
+- Parrilla/BBQ disponible bajo reserva"></textarea>
           </div>
         </div>
 
         <div class="card">
-          <div class="card-title">Políticas</div>
-          <div class="chips" id="policiesChips">
-            <div class="chip" data-value="pets">🐾 Acepta mascotas</div>
-            <div class="chip" data-value="nosmoking">🚭 No fumadores</div>
-            <div class="chip" data-value="smoking">🚬 Área fumadores</div>
-            <div class="chip" data-value="kids">👶 Apto para niños</div>
-            <div class="chip" data-value="adults">🔞 Solo adultos</div>
-            <div class="chip" data-value="events">🎉 Eventos permitidos</div>
-            <div class="chip" data-value="noevents">🚫 Sin eventos</div>
+          <div class="card-title">Políticas del hotel</div>
+          <p style="font-size:11.5px;color:var(--text2);margin-bottom:12px;line-height:1.6;">
+            Escribí las políticas con sus condiciones. Cuanto más detalle, mejor va a responder el chatbot.
+          </p>
+          <div class="field">
+            <textarea class="textarea" id="hotelPolicies" style="min-height:120px;"
+              placeholder="Ej:
+- No se admiten mascotas
+- Prohibido fumar en habitaciones y áreas internas. Hay área de fumadores en el jardín
+- Apto para familias con niños de todas las edades
+- No se permiten eventos ni fiestas
+- Cancelación gratuita hasta 48 hs antes del check-in
+- Se requiere tarjeta de crédito como garantía al momento del check-in"></textarea>
           </div>
         </div>
 
@@ -850,19 +857,20 @@ async function loadData() {
 
   set('hotelName',      'hotel_name');
   set('hotelPhone',     'hotel_phone');
+  set('hotelWhatsapp',  'hotel_whatsapp');
   set('hotelAddress',   'hotel_address');
   set('hotelEmail',     'hotel_email');
   set('checkinTime',    'checkin_time');
   set('checkoutTime',   'checkout_time');
   set('receptionHours', 'reception_hours');
   set('hotelDesc',      'hotel_description');
+  set('hotelServices',  'hotel_services');
+  set('hotelPolicies',  'hotel_policies');
   set('customTone',     'bot_custom_tone');
   set('welcomeMsg',     'bot_welcome_msg');
   set('fallbackMsg',    'bot_fallback_msg');
 
-  try { setActiveChips('servicesChips', JSON.parse(map['hotel_services'] || '[]')); } catch(e){}
-  try { setActiveChips('policiesChips', JSON.parse(map['hotel_policies'] || '[]')); } catch(e){}
-  try { setActiveChips('langsChips',    JSON.parse(map['bot_languages']  || '["es"]')); } catch(e){}
+  try { setActiveChips('langsChips', JSON.parse(map['bot_languages'] || '["es"]')); } catch(e){}
   try { forbiddenItems = JSON.parse(map['bot_forbidden'] || '[]'); renderForbidden(); } catch(e){}
 
   if (map['bot_personality']) setPersonality(map['bot_personality']);
@@ -880,14 +888,15 @@ async function saveCurrentSection() {
     rows = [
       { key: 'hotel_name',        value: document.getElementById('hotelName').value },
       { key: 'hotel_phone',       value: document.getElementById('hotelPhone').value },
+      { key: 'hotel_whatsapp',    value: document.getElementById('hotelWhatsapp').value },
       { key: 'hotel_address',     value: document.getElementById('hotelAddress').value },
       { key: 'hotel_email',       value: document.getElementById('hotelEmail').value },
       { key: 'checkin_time',      value: document.getElementById('checkinTime').value },
       { key: 'checkout_time',     value: document.getElementById('checkoutTime').value },
       { key: 'reception_hours',   value: document.getElementById('receptionHours').value },
       { key: 'hotel_description', value: document.getElementById('hotelDesc').value },
-      { key: 'hotel_services',    value: JSON.stringify(getActiveChips('servicesChips')) },
-      { key: 'hotel_policies',    value: JSON.stringify(getActiveChips('policiesChips')) },
+      { key: 'hotel_services',    value: document.getElementById('hotelServices').value },
+      { key: 'hotel_policies',    value: document.getElementById('hotelPolicies').value },
       { key: 'bot_languages',     value: JSON.stringify(getActiveChips('langsChips')) },
     ];
   }
