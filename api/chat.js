@@ -34,13 +34,19 @@ const PERSONALITY_PROMPTS = {
   casual: "Usá un tono casual y descontracturado. Podés usar emojis ocasionalmente.",
 };
 
+// Extrae el primer email que encuentre en un texto
+function extractEmail(text) {
+  const match = text.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
+  return match ? match[0] : "";
+}
+
 function buildSystemPrompt(settings, rooms, prices) {
   const today = new Date().toISOString().split("T")[0];
   const hotelName    = settings["hotel_name"]        || "el hotel";
   const hotelPhone   = settings["hotel_phone"]        || "";
   const hotelWhatsapp= settings["hotel_whatsapp"]     || "";
   const hotelAddress = settings["hotel_address"]      || "";
-  const hotelEmail   = settings["hotel_email"]        || "";
+  const hotelEmail   = settings["hotel_email"] || extractEmail(settings["tpl_confirmacion"] || "");
   const checkin      = settings["checkin_time"]       || "";
   const checkout     = settings["checkout_time"]      || "";
   const reception    = settings["reception_hours"]    || "";
@@ -93,7 +99,8 @@ ${priceLines || "Sin tarifas cargadas."}
 INSTRUCCIONES:
 - Respondé en español. Máximo 3-4 oraciones por respuesta.
 - Si preguntan precios para fechas específicas, calculá el total sumando las tarifas noche por noche.
-- Si el cliente quiere CONFIRMAR, RESERVAR o dejar sus datos, respondé exactamente: HANDOFF_REQUESTED
+- Si el cliente quiere CONFIRMAR, RESERVAR o dejar sus datos, primero verificá si ya tenés en la conversación: nombre, fechas (checkin y checkout), tipo de habitación y cantidad de personas. Si faltan datos, preguntá SOLO los que faltan de a uno. Cuando tengas TODOS esos datos, respondé EXACTAMENTE con este JSON (sin texto adicional):
+HANDOFF_JSON:{"nombre":"...","checkin":"...","checkout":"...","habitacion":"...","personas":"...","precio":"..."}
 - Si la consulta no es sobre el hotel, respondé exactamente: OUT_OF_SCOPE
 - Si no tenés información suficiente para responder bien, respondé exactamente: UNANSWERED`;
 }
@@ -154,12 +161,33 @@ export default async function handler(req) {
       }
     }
 
-    // Reemplazar códigos internos por mensaje de fallback
-    const finalReply = (reply.trim() === "OUT_OF_SCOPE" || reply.trim() === "UNANSWERED")
-      ? (settings["bot_fallback_msg"] || "Esa consulta está fuera de mis posibilidades. Podés contactarnos directamente.")
-      : reply;
+    // Detectar HANDOFF con datos JSON
+    let finalReply = reply;
+    let handoffData = null;
 
-    return new Response(JSON.stringify({ reply: finalReply }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+    if (reply.trim().startsWith("HANDOFF_JSON:")) {
+      try {
+        handoffData = JSON.parse(reply.trim().replace("HANDOFF_JSON:", ""));
+        // Guardar lead en Supabase
+        try {
+          await insertSupabase("chatbot_leads", {
+            name: handoffData.nombre || "",
+            phone: "",
+            context: `Hab: ${handoffData.habitacion}, Personas: ${handoffData.personas}, Fechas: ${handoffData.checkin} → ${handoffData.checkout}, Precio: ${handoffData.precio}`,
+            created_at: new Date().toISOString(),
+          });
+        } catch(e) {}
+        finalReply = "HANDOFF_READY";
+      } catch(e) {
+        finalReply = reply;
+      }
+    } else if (reply.trim() === "OUT_OF_SCOPE" || reply.trim() === "UNANSWERED") {
+      finalReply = settings["bot_fallback_msg"] || "Esa consulta está fuera de mis posibilidades. Podés contactarnos directamente.";
+    }
+
+    return new Response(JSON.stringify({ reply: finalReply, handoffData, hotelWhatsapp: settings["hotel_whatsapp"] || "", hotelEmail: settings["hotel_email"] || "" }), {
+      status: 200, headers: { ...cors, "Content-Type": "application/json" },
+    });
 
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });

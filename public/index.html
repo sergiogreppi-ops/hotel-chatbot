@@ -208,7 +208,76 @@
   }
   .qr-btn:hover { background: var(--gold); color: #fff; }
 
-  /* handoff form */
+  /* contact card */
+  .contact-card {
+    margin-top: 10px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .contact-summary {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    background: var(--cream);
+    border-bottom: 1px solid var(--border);
+  }
+  .cs-row {
+    display: flex;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--dark);
+  }
+  .cs-row span:first-child { flex-shrink: 0; }
+  .contact-divider {
+    padding: 9px 14px;
+    font-size: 11px;
+    color: var(--gray);
+    letter-spacing: .04em;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .contact-btns {
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .contact-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all .15s;
+    cursor: pointer;
+  }
+  .wa-btn {
+    background: #25d366;
+    color: #fff;
+  }
+  .wa-btn:hover { background: #1da851; }
+  .mail-btn {
+    background: transparent;
+    color: var(--dark);
+    border: 1px solid var(--border);
+  }
+  .mail-btn:hover { background: var(--cream); }
+  .contact-note {
+    padding: 0 14px 10px;
+    font-size: 10.5px;
+    color: #bbb;
+    text-align: center;
+  }
+
+  /* handoff form (se mantiene por compatibilidad) */
   .hf-form {
     margin-top: 10px;
     background: #fff;
@@ -466,80 +535,49 @@ function setInputEnabled(enabled) {
   sendBtn.disabled = !enabled;
 }
 
-// ── HANDOFF FORM ─────────────────────────────────────
-function injectHandoffForm(bubble) {
-  const form = document.createElement('div');
-  form.className = 'hf-form';
-  form.innerHTML = `
-    <div>
-      <div class="hf-label">TU NOMBRE</div>
-      <input class="hf-input" id="hfName" placeholder="Ej: María García" />
-    </div>
-    <div>
-      <div class="hf-label">TELÉFONO (WhatsApp)</div>
-      <input class="hf-input" id="hfPhone" placeholder="Ej: 1112345678" type="tel" />
-    </div>
-    <button class="hf-submit" id="hfSubmit" disabled>Enviar mis datos →</button>
-  `;
-  bubble.appendChild(form);
+// ── CONTACT BUTTONS ───────────────────────────────────
+function buildContactButtons(data, whatsapp, email) {
+  const nombre    = data.nombre    || '';
+  const checkin   = data.checkin   || '';
+  const checkout  = data.checkout  || '';
+  const hab       = data.habitacion|| '';
+  const personas  = data.personas  || '';
+  const precio    = data.precio    || '';
 
-  const nameEl  = document.getElementById('hfName');
-  const phoneEl = document.getElementById('hfPhone');
-  const btnEl   = document.getElementById('hfSubmit');
+  const msgText = `Hola! Quiero hacer una reserva.\n\n👤 Nombre: ${nombre}\n🛏️ Habitación: ${hab}\n👥 Personas: ${personas}\n📅 Check-in: ${checkin}\n📅 Check-out: ${checkout}${precio ? `\n💰 Precio cotizado: ${precio}` : ''}`;
 
-  const checkReady = () => { btnEl.disabled = !nameEl.value.trim() || !phoneEl.value.trim(); };
-  nameEl.addEventListener('input', checkReady);
-  phoneEl.addEventListener('input', checkReady);
-  btnEl.addEventListener('click', () => submitHandoff(nameEl.value.trim(), phoneEl.value.trim(), bubble));
-  scrollBottom();
-}
+  const waNum    = (whatsapp || '').replace(/\D/g, '');
+  const waLink   = waNum ? `https://wa.me/${waNum}?text=${encodeURIComponent(msgText)}` : null;
+  const mailSubj = `Reserva - ${nombre} - ${checkin} al ${checkout}`;
+  const mailLink = email ? `mailto:${email}?subject=${encodeURIComponent(mailSubj)}&body=${encodeURIComponent(msgText)}` : null;
 
-async function submitHandoff(name, phone, bubble) {
-  // Guardar lead
-  try {
-    await fetch(`https://ozjqqgwcztuummvwpgfu.supabase.co/rest/v1/chatbot_leads`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96anFxZ3djenR1dW1tdndwZ2Z1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MTA3NzIsImV4cCI6MjA2NjQ4Njc3Mn0.7L7TliaKQllfY4nF5J8Kh3D0TkeVFoPLjbt2nQ0Er0o',
-        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96anFxZ3djenR1dW1tdndwZ2Z1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MTA3NzIsImV4cCI6MjA2NjQ4Njc3Mn0.7L7TliaKQllfY4nF5J8Kh3D0TkeVFoPLjbt2nQ0Er0o',
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify({
-        name, phone,
-        context: STATE.history.slice(-8).map(m => `${m.role}: ${m.content}`).join('\n'),
-        created_at: new Date().toISOString()
-      })
-    });
-  } catch(e) { console.log('Lead guardado localmente'); }
+  const btnWa = waLink ? `
+    <a href="${waLink}" target="_blank" class="contact-btn wa-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.112 1.523 5.837L.057 23.943l6.293-1.45A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.65-.518-5.166-1.42l-.371-.22-3.844.885.923-3.741-.241-.386A9.937 9.937 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+      Confirmar por WhatsApp
+    </a>` : '';
 
-  STATE.handoffStage = 'done';
+  const btnMail = mailLink ? `
+    <a href="${mailLink}" class="contact-btn mail-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+      Confirmar por Email
+    </a>` : '';
 
-  // Reemplazar form con banner
-  const form = bubble.querySelector('.hf-form');
-  if (form) {
-    form.outerHTML = '';
-    bubble.querySelector('.hf-form')?.remove();
-  }
-  bubble.classList.add('success');
-  bubble.innerHTML = `✓ <strong>¡Listo, ${name}!</strong> Nuestro equipo se comunicará al <strong>${phone}</strong> para confirmar disponibilidad y cerrar tu reserva.`;
-
-  addSys('— conversación derivada al equipo —');
-  addRow('bot', 'Mientras tanto podés seguir consultando lo que necesites 😊');
-  addQuickReplies(['Consultar otras fechas', 'Ver habitaciones']);
-  scrollBottom();
-}
-
-// ── API CALL ──────────────────────────────────────────
-async function callAPI(messages) {
-  const res = await fetch('/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages })
-  });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
-  return data.reply;
+  return `
+    <div class="contact-card">
+      <div class="contact-summary">
+        <div class="cs-row"><span>👤</span><span>${escHtml(nombre)}</span></div>
+        <div class="cs-row"><span>🛏️</span><span>${escHtml(hab)} · ${escHtml(personas)} personas</span></div>
+        <div class="cs-row"><span>📅</span><span>${escHtml(checkin)} → ${escHtml(checkout)}</span></div>
+        ${precio ? `<div class="cs-row"><span>💰</span><span>${escHtml(precio)}</span></div>` : ''}
+      </div>
+      <div class="contact-divider">¿Cómo preferís confirmar?</div>
+      <div class="contact-btns">
+        ${btnWa}
+        ${btnMail}
+      </div>
+      <div class="contact-note">Al hacer click se abre con el mensaje pre-cargado con tus datos.</div>
+    </div>`;
 }
 
 // ── PROCESS MESSAGE ───────────────────────────────────
@@ -548,29 +586,31 @@ async function processInput(text) {
   STATE.thinking = true;
   setInputEnabled(false);
 
-  // Limpiar QRs
   document.querySelectorAll('.qr-wrap').forEach(el => el.remove());
-
   addRow('user', escHtml(text));
   showTyping();
 
   const newHistory = [...STATE.history, { role: 'user', content: text }];
 
   try {
-    const reply = await callAPI(newHistory);
+    const result = await callAPI(newHistory);
+    const { reply, handoffData, hotelWhatsapp, hotelEmail } = result;
     hideTyping();
 
-    if (reply.trim() === 'HANDOFF_REQUESTED') {
-      STATE.handoffStage = 'form';
-      const { bubble } = addRow('bot', '¡Perfecto! Para conectarte con nuestro equipo y confirmar disponibilidad, necesito tus datos:');
-      injectHandoffForm(bubble);
+    if (reply === 'HANDOFF_READY' && handoffData) {
+      STATE.handoffStage = 'done';
       STATE.history = newHistory;
+      const { bubble } = addRow('bot', '¡Perfecto! Acá están los datos de tu consulta:');
+      bubble.innerHTML += buildContactButtons(handoffData, hotelWhatsapp, hotelEmail);
+      addSys('— reserva lista para confirmar —');
     } else {
       STATE.history = [...newHistory, { role: 'assistant', content: reply }];
-      addRow('bot', escHtml(reply).replace(/\n/g, '<br>'));
+      // Detectar y linkear teléfono/whatsapp/email en respuestas normales
+      const linkedReply = linkifyContacts(escHtml(reply).replace(/\n/g, '<br>'), hotelWhatsapp, hotelEmail);
+      addRow('bot', linkedReply);
 
       const low = text.toLowerCase();
-      if (low.includes('hola') || low.includes('informaci') || low.match(/^(buenas|hola|buen)/)) {
+      if (low.match(/^(hola|buenas|buen|info)/)) {
         addQuickReplies(['Ver habitaciones', 'Consultar precios', 'Quiero reservar']);
       } else if (reply.toLowerCase().includes('doble') || reply.toLowerCase().includes('triple') || reply.toLowerCase().includes('precio')) {
         addQuickReplies(['Quiero reservar', 'Consultar otras fechas']);
@@ -585,6 +625,22 @@ async function processInput(text) {
   STATE.thinking = false;
   setInputEnabled(true);
   inputEl.focus();
+}
+
+// Convierte números de tel/WA y emails en links clickeables
+function linkifyContacts(html, whatsapp, email) {
+  if (whatsapp) {
+    const waNum = whatsapp.replace(/\D/g, '');
+    const waEsc = escHtml(whatsapp);
+    html = html.replace(new RegExp(waEsc, 'g'),
+      `<a href="https://wa.me/${waNum}" target="_blank" style="color:var(--gold);text-decoration:underline;">${waEsc}</a>`);
+  }
+  if (email) {
+    const emailEsc = escHtml(email);
+    html = html.replace(new RegExp(emailEsc, 'g'),
+      `<a href="mailto:${emailEsc}" style="color:var(--gold);text-decoration:underline;">${emailEsc}</a>`);
+  }
+  return html;
 }
 
 function escHtml(str) {
