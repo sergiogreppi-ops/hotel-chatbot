@@ -535,6 +535,17 @@ function setInputEnabled(enabled) {
   sendBtn.disabled = !enabled;
 }
 
+// ── API CALL ──────────────────────────────────────────
+async function callAPI(messages) {
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages })
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json();
+}
+
 // ── CONTACT BUTTONS ───────────────────────────────────
 function buildContactButtons(data, whatsapp, email) {
   const nombre    = data.nombre    || '';
