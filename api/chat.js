@@ -40,6 +40,63 @@ function extractEmail(text) {
   return match ? match[0] : "";
 }
 
+// Cálculo EXACTO igual que la app de reservas
+function calcQuote(prices, checkin, checkout, tipo, discount, extraInfo = "") {
+  const r100  = n => Math.round(n / 100) * 100;
+  const r1000 = n => Math.round(n / 1000) * 1000;
+
+  const start = new Date(checkin + "T00:00:00");
+  const end   = new Date(checkout + "T00:00:00");
+  if (isNaN(start) || isNaN(end) || start >= end) return null;
+
+  const nights = Math.round((end - start) / 86400000);
+  let total = 0;
+  const missing = [];
+
+  for (let d = new Date(start); d < end; d.setDate(d.getDate() + 1)) {
+    const ds = d.toISOString().split("T")[0];
+    const p  = prices[ds]?.[tipo.toLowerCase()];
+    if (!p || p <= 0) missing.push(ds);
+    else total += p;
+  }
+
+  if (missing.length > 0) return { error: `Sin tarifas para: ${missing.slice(0,3).join(", ")}` };
+
+  const desc          = parseFloat(discount) / 100 || 0;
+  const conDescuento  = r100(total * (1 - desc));
+  const saldoEfectivo = r1000(conDescuento * (1 - 0.333));
+  const senia         = conDescuento - saldoEfectivo;
+  const saldoSinDesc  = total - senia;
+  const descPorc      = Math.round(desc * 100);
+
+  const fmtARS = n => "$" + Math.round(n).toLocaleString("es-AR");
+
+  return {
+    nights,
+    tipo,
+    checkin,
+    checkout,
+    totalSinDesc:  fmtARS(total),
+    totalConDesc:  fmtARS(conDescuento),
+    senia:         fmtARS(senia),
+    saldoSinDesc:  fmtARS(saldoSinDesc),
+    saldoEfectivo: fmtARS(saldoEfectivo),
+    descPorc,
+    text: `Habitación: ${tipo}
+Check In: ${checkin} / Check Out: ${checkout}
+Cantidad de noches: ${nights}
+Total de la estadía: ${fmtARS(total)} en un pago.
+
+Promoción: -${descPorc}% de descuento en efectivo: ${fmtARS(conDescuento)}
+
+Para confirmar la reserva se le pedirá una seña de ${fmtARS(senia)} por transferencia bancaria.
+
+El saldo restante se abona al llegar:
+${fmtARS(saldoSinDesc)} con cualquier medio de pago el día de llegada.
+${fmtARS(saldoEfectivo)} pagando únicamente en efectivo, el día de llegada.${extraInfo ? `\n\n${extraInfo}` : ""}`
+  };
+}
+
 function buildSystemPrompt(settings, rooms, prices) {
   const today = new Date().toISOString().split("T")[0];
   const hotelName    = settings["hotel_name"]        || "el hotel";
@@ -108,55 +165,22 @@ ${services ? `\nSERVICIOS:\n${services}` : ""}
 ${policies ? `\nPOLÍTICAS:\n${policies}` : ""}
 ${forbiddenBlock}
 
-HABITACIONES: ${roomList}
+HABITACIONES DISPONIBLES: ${roomList}
 HOY: ${today}
 
-TARIFAS POR NOCHE:
-${priceLines || "Sin tarifas cargadas."}
-
-CÓMO CALCULAR Y PRESENTAR UNA COTIZACIÓN:
-Cuando el cliente pregunta el precio para fechas específicas, calculá el total sumando las tarifas noche por noche, luego aplicá esta lógica EXACTA (igual que la app de reservas):
-
-1. totalSinDescuento = suma de tarifas de cada noche
-2. totalConDescuento = redondear al $100 más cercano (totalSinDescuento × ${1 - discount})
-3. saldoEfectivo     = redondear al $1000 más cercano (totalConDescuento × 0.667)
-4. senia             = totalConDescuento - saldoEfectivo
-5. saldoSinDescuento = totalSinDescuento - senia
-
-EJEMPLO con total $${ej.total.toLocaleString("es-AR")}:
-- Total sin descuento: $${ej.total.toLocaleString("es-AR")}
-- Total con descuento (${ej.descPorc}% off en efectivo): $${ej.conDesc.toLocaleString("es-AR")}
-- Seña: $${ej.senia.toLocaleString("es-AR")}
-- Saldo sin descuento: $${ej.saldoSD.toLocaleString("es-AR")}
-- Saldo en efectivo: $${ej.saldo.toLocaleString("es-AR")}
-
-FORMATO DE RESPUESTA para cotizaciones (usá exactamente este formato):
-Habitación: [tipo]
-Check In: [fecha] / Check Out: [fecha]
-Noches: [n]
-Total de la estadía: $[total_sin_descuento] en un pago.
-
-Promoción: -${descPorc}% de descuento en efectivo: $[total_con_descuento]
-
-Para confirmar la reserva se le pedirá una seña de $[senia] por transferencia bancaria.
-
-El saldo restante se abona al llegar:
-$[saldo_sin_desc] con cualquier medio de pago.
-$[saldo_efectivo] pagando en efectivo (con descuento).
-
-HABITACIONES: ${roomList}
-HOY: ${today}
-
-TARIFAS POR NOCHE:
+TARIFAS DISPONIBLES:
 ${priceLines || "Sin tarifas cargadas."}
 
 INSTRUCCIONES:
-- Respondé en español. Máximo 2 oraciones salvo cuando cotizás precios.
-- Si preguntan precios para fechas específicas, usá el formato de cotización de arriba con los cálculos exactos.
-- Si el cliente quiere CONFIRMAR, RESERVAR o dejar sus datos, primero verificá si ya tenés en la conversación: nombre, fechas (checkin y checkout), tipo de habitación y cantidad de personas. Si faltan datos, preguntá SOLO los que faltan de a uno. Cuando tengas TODOS esos datos, respondé EXACTAMENTE con este JSON (sin texto adicional):
+- Respondé en español. Máximo 2 oraciones salvo cuando mostrás una cotización.
+- Cuando el cliente pida precio para fechas concretas y tengas checkin, checkout y tipo de habitación, respondé EXACTAMENTE con este JSON (sin texto adicional):
+QUOTE_REQUEST:{"checkin":"YYYY-MM-DD","checkout":"YYYY-MM-DD","tipo":"doble|triple|cuadruple"}
+- Si el cliente no especificó las fechas o el tipo de habitación, preguntale solo lo que falta.
+- Si el cliente quiere CONFIRMAR o RESERVAR y ya tenés nombre, fechas, tipo y personas, respondé EXACTAMENTE:
 HANDOFF_JSON:{"nombre":"...","checkin":"...","checkout":"...","habitacion":"...","personas":"...","precio":"..."}
-- Si la consulta no es sobre el hotel, respondé exactamente: OUT_OF_SCOPE
-- Si no tenés información suficiente para responder bien, respondé exactamente: UNANSWERED`;
+- Si faltan datos para el handoff, preguntá de a uno.
+- Si la consulta no es sobre el hotel: OUT_OF_SCOPE
+- Si no tenés información suficiente: UNANSWERED`;
 }
 
 export default async function handler(req) {
@@ -198,6 +222,28 @@ export default async function handler(req) {
 
     const data = await anthropicRes.json();
     const reply = data.content?.[0]?.text || "Lo siento, no pude procesar tu consulta.";
+
+    // Detectar QUOTE_REQUEST — calcular en el servidor con precisión exacta
+    if (reply.trim().startsWith("QUOTE_REQUEST:")) {
+      try {
+        const qData = JSON.parse(reply.trim().replace("QUOTE_REQUEST:", ""));
+        const discount = settings["discount"] || "0";
+
+        const extraInfo = `Información adicional:\n- No contamos con estacionamiento.\n- El desayuno está incluido.\n- Check-in 13:00 hs / Check-out 10:00 hs.\n- Las tarifas y promociones pueden variar si la reserva no queda confirmada.`;
+
+        const quote = calcQuote(prices, qData.checkin, qData.checkout, qData.tipo, discount, extraInfo);
+        if (quote && !quote.error) {
+          return new Response(JSON.stringify({ reply: quote.text, hotelWhatsapp: settings["hotel_whatsapp"] || "", hotelEmail: settings["hotel_email"] || extractEmail(settings["tpl_confirmacion"] || "") }), {
+            status: 200, headers: { ...cors, "Content-Type": "application/json" },
+          });
+        } else {
+          const errMsg = quote?.error || "No hay tarifas cargadas para esas fechas.";
+          return new Response(JSON.stringify({ reply: errMsg, hotelWhatsapp: settings["hotel_whatsapp"] || "", hotelEmail: settings["hotel_email"] || "" }), {
+            status: 200, headers: { ...cors, "Content-Type": "application/json" },
+          });
+        }
+      } catch(e) { /* si falla el parse, continúa con la respuesta normal */ }
+    }
 
     // Registrar preguntas sin respuesta
     if (reply.trim() === "UNANSWERED" || reply.trim() === "OUT_OF_SCOPE") {
