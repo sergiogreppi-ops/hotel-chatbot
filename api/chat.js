@@ -201,9 +201,13 @@ ${priceLines || "Sin tarifas cargadas."}
 
 INSTRUCCIONES:
 - Respondé en español. Máximo 2 oraciones salvo cuando mostrás una cotización.
+- EQUIVALENCIAS AUTOMÁTICAS (aplicar siempre sin preguntar):
+  * "habitación doble" o "para 2 personas" → tipo=doble, personas=2
+  * "habitación triple" o "para 3 personas" → tipo=triple, personas=3
+  * "habitación cuádruple" o "para 4 personas" → tipo=cuadruple, personas=4
 - Cuando el cliente pida precio para fechas concretas y tengas checkin, checkout y tipo de habitación, respondé EXACTAMENTE con este JSON (sin texto adicional):
 QUOTE_REQUEST:{"checkin":"YYYY-MM-DD","checkout":"YYYY-MM-DD","tipo":"doble|triple|cuadruple"}
-- Si el cliente no especificó las fechas o el tipo de habitación, preguntale solo lo que falta.
+- Si el cliente no especificó las fechas o el tipo de habitación, preguntale solo lo que falta. Nunca preguntes cantidad de personas si ya sabés el tipo, ni el tipo si ya sabés las personas.
 - Si el cliente quiere CONFIRMAR o RESERVAR, los únicos datos que necesitás son: nombre, fechas, tipo de habitación y cantidad de personas. NUNCA pidas teléfono ni email. Cuando tengas los 4 datos, respondé ÚNICA Y EXCLUSIVAMENTE con el JSON, sin ningún texto antes ni después, sin saludos, sin resumen, sin explicación:
 HANDOFF_JSON:{"nombre":"...","checkin":"...","checkout":"...","habitacion":"...","personas":"...","precio":"..."}
 - Si faltan datos para el handoff, preguntá de a uno.
@@ -229,6 +233,14 @@ export default async function handler(req) {
     const { settings, rooms, prices } = await getStaticData();
     const hotelWhatsapp = settings["hotel_whatsapp"] || "";
     const hotelEmail    = settings["hotel_email"] || extractEmail(settings["tpl_confirmacion"] || "");
+
+    // Verificar si el bot está activo
+    if (settings["bot_enabled"] === "false") {
+      const offMsg = settings["bot_fallback_msg"] || "El asistente no está disponible en este momento. Por favor contactanos directamente.";
+      return new Response(JSON.stringify({ reply: offMsg, hotelWhatsapp, hotelEmail }), {
+        status: 200, headers: { ...cors, "Content-Type": "application/json" },
+      });
+    }
 
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",

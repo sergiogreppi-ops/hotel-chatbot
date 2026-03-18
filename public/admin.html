@@ -431,6 +431,26 @@ body {
 }
 @keyframes spin { to{transform:rotate(360deg)} }
 
+/* ── TOGGLE SWITCH ──────────────────────── */
+.toggle-track {
+  width: 48px; height: 26px;
+  border-radius: 13px;
+  background: var(--border2);
+  position: relative;
+  transition: background .2s;
+}
+.toggle-track.on { background: var(--green); }
+.toggle-thumb {
+  width: 20px; height: 20px;
+  border-radius: 50%;
+  background: white;
+  position: absolute;
+  top: 3px; left: 3px;
+  transition: left .2s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.3);
+}
+.toggle-track.on .toggle-thumb { left: 25px; }
+
 /* ── SCROLLBAR ──────────────────────── */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
@@ -634,6 +654,21 @@ body {
         <div class="section-header">
           <h2>Configuración del bot</h2>
           <p>Personalizá cómo responde el chatbot y qué información puede o no compartir.</p>
+        </div>
+
+        <div class="card" style="border-color: var(--border2);">
+          <div class="card-title">Estado del chatbot</div>
+          <div style="display:flex; align-items:center; justify-content:space-between; gap:16px;">
+            <div>
+              <div style="font-size:13px; color:var(--text); margin-bottom:3px;" id="botStatusLabel">Cargando…</div>
+              <div style="font-size:11px; color:var(--text3);">Cuando está desactivado, el bot responde que no está disponible y sugiere contactar al hotel directamente.</div>
+            </div>
+            <div class="toggle-wrap" onclick="toggleBot()" id="botToggle" style="flex-shrink:0; cursor:pointer;">
+              <div class="toggle-track" id="toggleTrack">
+                <div class="toggle-thumb" id="toggleThumb"></div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <div class="card">
@@ -873,6 +908,8 @@ async function loadData() {
   try { setActiveChips('langsChips', JSON.parse(map['bot_languages'] || '["es"]')); } catch(e){}
   try { forbiddenItems = JSON.parse(map['bot_forbidden'] || '[]'); renderForbidden(); } catch(e){}
 
+  renderToggle(map['bot_enabled'] !== 'false');
+
   if (map['bot_personality']) setPersonality(map['bot_personality']);
 }
 
@@ -1026,6 +1063,31 @@ async function ignoreQuestion(id) {
   updateStats();
   renderQuestions();
   updateBadge();
+}
+
+// ── BOT TOGGLE ────────────────────────────────────────
+let botEnabled = true;
+
+function renderToggle(enabled) {
+  botEnabled = enabled;
+  const track = document.getElementById('toggleTrack');
+  const label = document.getElementById('botStatusLabel');
+  if (!track) return;
+  track.classList.toggle('on', enabled);
+  label.textContent = enabled ? 'Chatbot activado' : 'Chatbot desactivado';
+  label.style.color = enabled ? 'var(--green)' : 'var(--red)';
+}
+
+async function toggleBot() {
+  const newState = !botEnabled;
+  renderToggle(newState);
+  const ok = await dbUpsert('settings', [{ key: 'bot_enabled', value: newState ? 'true' : 'false' }]);
+  if (ok) {
+    showToast(newState ? '✓ Chatbot activado' : 'Chatbot desactivado', newState ? 'success' : 'info');
+  } else {
+    renderToggle(!newState); // revertir si falló
+    showToast('Error al guardar', 'error');
+  }
 }
 
 // ── UTILS ─────────────────────────────────────────
