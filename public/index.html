@@ -712,7 +712,7 @@ async function processInput(text) {
         }
       }
 
-      const linkedReply = linkifyContacts(escHtml(reply).replace(/\n/g, '<br>'), hotelWhatsapp, hotelEmail);
+      const linkedReply = linkifyUrls(linkifyContacts(escHtml(reply).replace(/\n/g, '<br>'), hotelWhatsapp, hotelEmail));
       addRow('bot', linkedReply);
 
       const low = text.toLowerCase();
@@ -731,6 +731,14 @@ async function processInput(text) {
   STATE.thinking = false;
   setInputEnabled(true);
   inputEl.focus();
+}
+
+// Convierte URLs en links clickeables
+function linkifyUrls(html) {
+  return html.replace(
+    /(https?:\/\/[^\s<"]+)/g,
+    '<a href="$1" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:underline;">$1</a>'
+  );
 }
 
 // Convierte números de tel/WA y emails en links clickeables
