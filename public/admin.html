@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin · Chatbot Hotel</title>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@300;400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --bg2: #161616;
+  --bg3: #1e1e1e;
+  --border: #2a2a2a;
+  --border2: #333;
+  --text: #e8e8e8;
+  --text2: #888;
+  --text3: #555;
+  --gold: #c9a84c;
+  --gold2: #e8c97a;
+  --green: #4caf7d;
+  --green-bg: #0d1f16;
+  --red: #e05555;
+  --red-bg: #1f0d0d;
+  --blue: #5b9cf6;
+  --blue-bg: #0d1525;
+  --amber: #f5a623;
+  --amber-bg: #1f1500;
+  --radius: 10px;
+  --radius-sm: 6px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Geist Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* ── LAYOUT ─────────────────────────── */
+.app { display: flex; min-height: 100vh; }
+
+.sidebar {
+  width: 220px;
+  background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+}
+
+.main {
+  margin-left: 220px;
+  flex: 1;
+  min-height: 100vh;
+}
+
+/* ── SIDEBAR ────────────────────────── */
+.sidebar-logo {
+  padding: 24px 20px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.logo-label {
+  font-family: 'Instrument Serif', serif;
+  font-size: 18px;
+  color: var(--gold);
+  letter-spacing: .02em;
+  display: block;
+}
+.logo-sub {
+  font-size: 10px;
+  color: var(--text3);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.nav { padding: 12px 0; flex: 1; }
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all .15s;
+  border-left: 2px solid transparent;
+  font-size: 12px;
+  letter-spacing: .03em;
+  user-select: none;
+}
+.nav-item:hover { color: var(--text); background: var(--bg3); }
+.nav-item.active {
+  color: var(--gold);
+  border-left-color: var(--gold);
+  background: rgba(201,168,76,.06);
+}
+.nav-icon { font-size: 14px; width: 16px; text-align: center; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--red);
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--text3);
+}
+.status-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--green);
+  animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1}50%{opacity:.4} }
+
+/* ── TOPBAR ─────────────────────────── */
+.topbar {
+  height: 56px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 32px;
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.topbar-title {
+  font-family: 'Instrument Serif', serif;
+  font-size: 16px;
+  color: var(--text);
+  font-style: italic;
+}
+.topbar-actions { display: flex; gap: 8px; }
+
+.btn {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border2);
+  cursor: pointer;
+  transition: all .15s;
+  letter-spacing: .04em;
+  font-weight: 400;
+}
+.btn-ghost { background: transparent; color: var(--text2); }
+.btn-ghost:hover { background: var(--bg3); color: var(--text); }
+.btn-primary {
+  background: var(--gold);
+  color: #0a0a0a;
+  border-color: var(--gold);
+  font-weight: 500;
+}
+.btn-primary:hover { background: var(--gold2); }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+.btn-danger { background: transparent; color: var(--red); border-color: var(--red-bg); }
+.btn-danger:hover { background: var(--red-bg); }
+
+/* ── CONTENT ────────────────────────── */
+.content { padding: 32px; max-width: 860px; }
+
+.section { display: none; }
+.section.active { display: block; animation: fadeIn .2s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+.section-header { margin-bottom: 28px; }
+.section-header h2 {
+  font-family: 'Instrument Serif', serif;
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.section-header p { font-size: 12px; color: var(--text2); }
+
+/* ── CARDS ──────────────────────────── */
+.card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 22px;
+  margin-bottom: 16px;
+}
+.card-title {
+  font-size: 11px;
+  color: var(--text3);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── FORM ELEMENTS ──────────────────── */
+.field { margin-bottom: 16px; }
+.field:last-child { margin-bottom: 0; }
+.label {
+  display: block;
+  font-size: 11px;
+  color: var(--text2);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+.input, .textarea, .select {
+  width: 100%;
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 9px 12px;
+  font-family: 'Geist Mono', monospace;
+  font-size: 12.5px;
+  color: var(--text);
+  outline: none;
+  transition: border-color .15s;
+}
+.input:focus, .textarea:focus, .select:focus { border-color: var(--gold); }
+.textarea { resize: vertical; min-height: 80px; line-height: 1.6; }
+.select { cursor: pointer; }
+.select option { background: var(--bg2); }
+
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── TOGGLE CHIPS ───────────────────── */
+.chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.chip {
+  padding: 5px 13px;
+  border-radius: 20px;
+  border: 1px solid var(--border2);
+  font-size: 11.5px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all .15s;
+  user-select: none;
+  letter-spacing: .02em;
+}
+.chip:hover { border-color: var(--gold); color: var(--text); }
+.chip.active {
+  background: rgba(201,168,76,.12);
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+/* ── PREGUNTAS SIN RESPUESTA ────────── */
+.questions-filters {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+.filter-btn {
+  font-family: 'Geist Mono', monospace;
+  font-size: 11px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all .15s;
+  letter-spacing: .03em;
+}
+.filter-btn.active { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,.08); }
+
+.question-list { display: flex; flex-direction: column; gap: 8px; }
+.question-item {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  transition: border-color .15s;
+}
+.question-item:hover { border-color: var(--border2); }
+.q-icon {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.q-icon.unanswered { background: var(--amber-bg); color: var(--amber); }
+.q-icon.added { background: var(--green-bg); color: var(--green); }
+.q-icon.ignored { background: var(--bg3); color: var(--text3); }
+.q-body { flex: 1; min-width: 0; }
+.q-text { color: var(--text); font-size: 13px; margin-bottom: 4px; }
+.q-meta { font-size: 11px; color: var(--text3); }
+.q-meta span { margin-right: 10px; }
+.q-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.q-btn {
+  font-family: 'Geist Mono', monospace;
+  font-size: 10px;
+  padding: 4px 9px;
+  border-radius: 4px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  cursor: pointer;
+  transition: all .15s;
+  letter-spacing: .03em;
+}
+.q-btn.resolve { color: var(--green); border-color: var(--green-bg); }
+.q-btn.resolve:hover { background: var(--green-bg); }
+.q-btn.ignore { color: var(--text3); }
+.q-btn.ignore:hover { background: var(--bg3); color: var(--text2); }
+
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--text3);
+}
+.empty-state .empty-icon { font-size: 32px; margin-bottom: 12px; }
+.empty-state p { font-size: 12px; }
+
+/* ── STATS ROW ──────────────────────── */
+.stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+.stat-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+.stat-num { font-size: 24px; font-weight: 500; color: var(--text); margin-bottom: 2px; }
+.stat-label { font-size: 11px; color: var(--text3); letter-spacing: .05em; }
+
+/* ── FORBIDDEN LIST ─────────────────── */
+.forbidden-list { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.forbidden-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 12.5px;
+  color: var(--text);
+}
+.forbidden-item button {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--text3);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  transition: color .15s;
+  font-family: monospace;
+}
+.forbidden-item button:hover { color: var(--red); }
+.forbidden-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--red); flex-shrink: 0; }
+
+.add-row { display: flex; gap: 8px; }
+.add-row .input { flex: 1; }
+
+/* ── PERSONALITY SELECTOR ───────────── */
+.personality-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.personality-card {
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  cursor: pointer;
+  transition: all .15s;
+  text-align: center;
+}
+.personality-card:hover { border-color: var(--gold); background: rgba(201,168,76,.04); }
+.personality-card.active {
+  border-color: var(--gold);
+  background: rgba(201,168,76,.1);
+}
+.p-emoji { font-size: 22px; margin-bottom: 6px; }
+.p-name { font-size: 12px; color: var(--text); font-weight: 500; margin-bottom: 3px; }
+.p-desc { font-size: 10.5px; color: var(--text3); line-height: 1.4; }
+
+/* ── TOAST ──────────────────────────── */
+.toast {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  padding: 12px 18px;
+  font-size: 12px;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transform: translateY(80px);
+  opacity: 0;
+  transition: all .25s;
+  z-index: 999;
+  box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { border-color: var(--green); }
+.toast.error { border-color: var(--red); }
+.toast-dot { width: 6px; height: 6px; border-radius: 50%; }
+.toast.success .toast-dot { background: var(--green); }
+.toast.error .toast-dot { background: var(--red); }
+
+/* ── LOADING ────────────────────────── */
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to{transform:rotate(360deg)} }
+
+/* ── SCROLLBAR ──────────────────────── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+@media (max-width: 700px) {
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+  .content { padding: 20px 16px; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .personality-grid { grid-template-columns: 1fr 1fr; }
+  .field-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <span class="logo-label">Hotel Admin</span>
+      <span class="logo-sub">Panel de control</span>
+    </div>
+    <nav class="nav">
+      <div class="nav-item active" data-section="info" onclick="switchSection('info', this)">
+        <span class="nav-icon">🏨</span> Información
+      </div>
+      <div class="nav-item" data-section="questions" onclick="switchSection('questions', this)">
+        <span class="nav-icon">💬</span> Preguntas
+        <span class="nav-badge" id="badgeCount" style="display:none">0</span>
+      </div>
+      <div class="nav-item" data-section="config" onclick="switchSection('config', this)">
+        <span class="nav-icon">⚙️</span> Configuración
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="status-pill">
+        <div class="status-dot"></div>
+        Chatbot activo
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <span class="topbar-title" id="topbarTitle">Información del hotel</span>
+      <div class="topbar-actions">
+        <button class="btn btn-ghost" onclick="loadData()">↺ Recargar</button>
+        <button class="btn btn-primary" id="saveBtn" onclick="saveCurrentSection()">
+          Guardar cambios
+        </button>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- ══ SECCIÓN: INFORMACIÓN ════════════════ -->
+      <div class="section active" id="section-info">
+        <div class="section-header">
+          <h2>Información del hotel</h2>
+          <p>Esta info la usa el chatbot para responder consultas de clientes.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Datos generales</div>
+          <div class="field-row">
+            <div class="field">
+              <label class="label">Nombre del hotel</label>
+              <input class="input" id="hotelName" placeholder="Ej: Hotel La Serena" />
+            </div>
+            <div class="field">
+              <label class="label">Teléfono</label>
+              <input class="input" id="hotelPhone" placeholder="Ej: +54 11 1234-5678" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="label">Dirección</label>
+            <input class="input" id="hotelAddress" placeholder="Ej: Av. Costanera 1234, Villa Gesell" />
+          </div>
+          <div class="field">
+            <label class="label">Email de contacto</label>
+            <input class="input" id="hotelEmail" type="email" placeholder="Ej: reservas@hotel.com" />
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Horarios</div>
+          <div class="field-row">
+            <div class="field">
+              <label class="label">Check-in</label>
+              <input class="input" id="checkinTime" placeholder="Ej: 14:00 hs" />
+            </div>
+            <div class="field">
+              <label class="label">Check-out</label>
+              <input class="input" id="checkoutTime" placeholder="Ej: 10:00 hs" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="label">Horario de recepción</label>
+            <input class="input" id="receptionHours" placeholder="Ej: 24 hs / 08:00 a 22:00 hs" />
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Servicios disponibles</div>
+          <div class="chips" id="servicesChips">
+            <div class="chip" data-value="wifi">📶 WiFi</div>
+            <div class="chip" data-value="parking">🚗 Parking</div>
+            <div class="chip" data-value="pool">🏊 Pileta</div>
+            <div class="chip" data-value="breakfast">🍳 Desayuno</div>
+            <div class="chip" data-value="restaurant">🍽️ Restaurante</div>
+            <div class="chip" data-value="gym">💪 Gimnasio</div>
+            <div class="chip" data-value="spa">🧖 Spa</div>
+            <div class="chip" data-value="bar">🍹 Bar</div>
+            <div class="chip" data-value="laundry">👕 Lavandería</div>
+            <div class="chip" data-value="transfer">🚌 Transfer</div>
+            <div class="chip" data-value="roomservice">🛎️ Room service</div>
+            <div class="chip" data-value="bbq">🔥 Parrilla/BBQ</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Políticas</div>
+          <div class="chips" id="policiesChips">
+            <div class="chip" data-value="pets">🐾 Acepta mascotas</div>
+            <div class="chip" data-value="nosmoking">🚭 No fumadores</div>
+            <div class="chip" data-value="smoking">🚬 Área fumadores</div>
+            <div class="chip" data-value="kids">👶 Apto para niños</div>
+            <div class="chip" data-value="adults">🔞 Solo adultos</div>
+            <div class="chip" data-value="events">🎉 Eventos permitidos</div>
+            <div class="chip" data-value="noevents">🚫 Sin eventos</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Información adicional</div>
+          <div class="field">
+            <label class="label">Descripción del hotel (para el chatbot)</label>
+            <textarea class="textarea" id="hotelDesc" placeholder="Ej: Hotel boutique frente al mar con vista panorámica, a 2 cuadras del centro. Ideal para familias y parejas..."></textarea>
+          </div>
+          <div class="field">
+            <label class="label">Idiomas del chatbot</label>
+            <div class="chips" id="langsChips">
+              <div class="chip" data-value="es">🇦🇷 Español</div>
+              <div class="chip" data-value="en">🇺🇸 Inglés</div>
+              <div class="chip" data-value="pt">🇧🇷 Portugués</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SECCIÓN: PREGUNTAS ══════════════════ -->
+      <div class="section" id="section-questions">
+        <div class="section-header">
+          <h2>Preguntas sin respuesta</h2>
+          <p>Consultas que los clientes hicieron y el bot no pudo responder bien. Usalas para mejorar el chatbot.</p>
+        </div>
+
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-num" id="statTotal">—</div>
+            <div class="stat-label">Total registradas</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="statPending">—</div>
+            <div class="stat-label">Sin resolver</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" id="statResolved">—</div>
+            <div class="stat-label">Resueltas</div>
+          </div>
+        </div>
+
+        <div class="questions-filters">
+          <button class="filter-btn active" onclick="filterQuestions('all', this)">Todas</button>
+          <button class="filter-btn" onclick="filterQuestions('pending', this)">Sin resolver</button>
+          <button class="filter-btn" onclick="filterQuestions('resolved', this)">Resueltas</button>
+          <button class="filter-btn" onclick="filterQuestions('ignored', this)">Ignoradas</button>
+        </div>
+
+        <div class="question-list" id="questionList">
+          <div class="empty-state">
+            <div class="empty-icon">⏳</div>
+            <p>Cargando preguntas…</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ SECCIÓN: CONFIGURACIÓN ══════════════ -->
+      <div class="section" id="section-config">
+        <div class="section-header">
+          <h2>Configuración del bot</h2>
+          <p>Personalizá cómo responde el chatbot y qué información puede o no compartir.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Personalidad</div>
+          <div class="personality-grid" id="personalityGrid">
+            <div class="personality-card" data-value="formal" onclick="selectPersonality(this)">
+              <div class="p-emoji">🎩</div>
+              <div class="p-name">Formal</div>
+              <div class="p-desc">Profesional y elegante. Ideal para hoteles de lujo.</div>
+            </div>
+            <div class="personality-card active" data-value="friendly" onclick="selectPersonality(this)">
+              <div class="p-emoji">😊</div>
+              <div class="p-name">Amigable</div>
+              <div class="p-desc">Cálido y cercano. Buena opción para la mayoría.</div>
+            </div>
+            <div class="personality-card" data-value="casual" onclick="selectPersonality(this)">
+              <div class="p-emoji">🤙</div>
+              <div class="p-name">Casual</div>
+              <div class="p-desc">Relajado e informal. Para hoteles jóvenes y hostels.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Tono personalizado (opcional)</div>
+          <div class="field">
+            <label class="label">Instrucción de tono adicional</label>
+            <textarea class="textarea" id="customTone" placeholder="Ej: Siempre tuteá al cliente. Usá emojis ocasionalmente. Sé muy conciso, máximo 2 oraciones por respuesta."></textarea>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Información que el bot NO puede revelar</div>
+          <p style="font-size:11.5px; color:var(--text2); margin-bottom:14px; line-height:1.5;">
+            El bot nunca va a mencionar estos temas aunque el cliente los pregunte directamente.
+          </p>
+          <div class="forbidden-list" id="forbiddenList"></div>
+          <div class="add-row">
+            <input class="input" id="newForbidden" placeholder="Ej: precios de temporada anterior, descuentos especiales..." />
+            <button class="btn btn-ghost" onclick="addForbidden()">+ Agregar</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Mensaje de bienvenida</div>
+          <div class="field">
+            <label class="label">Primer mensaje que ve el cliente</label>
+            <textarea class="textarea" id="welcomeMsg" placeholder="Ej: ¡Bienvenido/a al Hotel La Serena! 🌊 Soy tu asistente virtual. ¿En qué puedo ayudarte hoy?"></textarea>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Mensaje cuando no puede responder</div>
+          <div class="field">
+            <label class="label">Respuesta para consultas fuera de tema</label>
+            <textarea class="textarea" id="fallbackMsg" placeholder="Ej: Esa consulta está fuera de mis posibilidades, pero podés contactarnos directamente al teléfono o por email."></textarea>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /content -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <div class="toast-dot"></div>
+  <span id="toastMsg">Guardado</span>
+</div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────
+const SUPABASE_URL = 'https://ozjqqgwcztuummvwpgfu.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96anFxZ3djenR1dW1tdndwZ2Z1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MTA3NzIsImV4cCI6MjA2NjQ4Njc3Mn0.7L7TliaKQllfY4nF5J8Kh3D0TkeVFoPLjbt2nQ0Er0o';
+
+const SECTION_TITLES = {
+  info: 'Información del hotel',
+  questions: 'Preguntas sin respuesta',
+  config: 'Configuración del bot'
+};
+
+let currentSection = 'info';
+let allQuestions = [];
+let currentFilter = 'all';
+let forbiddenItems = [];
+
+// ── SUPABASE ──────────────────────────────────────
+async function dbGet(table, select = '*', params = '') {
+  const url = `${SUPABASE_URL}/rest/v1/${table}?select=${encodeURIComponent(select)}${params}`;
+  const res = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+  return res.json();
+}
+
+async function dbUpsert(table, data) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      Prefer: 'resolution=merge-duplicates,return=minimal'
+    },
+    body: JSON.stringify(data)
+  });
+  return res.ok;
+}
+
+async function dbUpdate(table, id, data) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      Prefer: 'return=minimal'
+    },
+    body: JSON.stringify(data)
+  });
+  return res.ok;
+}
+
+// ── NAVIGATION ────────────────────────────────────
+function switchSection(name, el) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById(`section-${name}`).classList.add('active');
+  el.classList.add('active');
+  document.getElementById('topbarTitle').textContent = SECTION_TITLES[name];
+  currentSection = name;
+  if (name === 'questions') loadQuestions();
+}
+
+// ── TOAST ─────────────────────────────────────────
+let toastTimer;
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── CHIPS ─────────────────────────────────────────
+function initChips(containerId) {
+  document.querySelectorAll(`#${containerId} .chip`).forEach(chip => {
+    chip.addEventListener('click', () => chip.classList.toggle('active'));
+  });
+}
+
+function getActiveChips(containerId) {
+  return Array.from(document.querySelectorAll(`#${containerId} .chip.active`))
+    .map(c => c.dataset.value);
+}
+
+function setActiveChips(containerId, values) {
+  document.querySelectorAll(`#${containerId} .chip`).forEach(chip => {
+    chip.classList.toggle('active', values.includes(chip.dataset.value));
+  });
+}
+
+// ── PERSONALITY ───────────────────────────────────
+function selectPersonality(el) {
+  document.querySelectorAll('.personality-card').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function getPersonality() {
+  const active = document.querySelector('.personality-card.active');
+  return active ? active.dataset.value : 'friendly';
+}
+
+function setPersonality(val) {
+  document.querySelectorAll('.personality-card').forEach(c => {
+    c.classList.toggle('active', c.dataset.value === val);
+  });
+}
+
+// ── FORBIDDEN ─────────────────────────────────────
+function renderForbidden() {
+  const list = document.getElementById('forbiddenList');
+  if (forbiddenItems.length === 0) {
+    list.innerHTML = '<p style="font-size:12px;color:var(--text3);padding:8px 0;">Sin restricciones configuradas.</p>';
+    return;
+  }
+  list.innerHTML = forbiddenItems.map((item, i) => `
+    <div class="forbidden-item">
+      <div class="forbidden-dot"></div>
+      <span>${escHtml(item)}</span>
+      <button onclick="removeForbidden(${i})" title="Eliminar">✕</button>
+    </div>
+  `).join('');
+}
+
+function addForbidden() {
+  const input = document.getElementById('newForbidden');
+  const val = input.value.trim();
+  if (!val) return;
+  forbiddenItems.push(val);
+  input.value = '';
+  renderForbidden();
+}
+
+function removeForbidden(i) {
+  forbiddenItems.splice(i, 1);
+  renderForbidden();
+}
+
+document.getElementById('newForbidden').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); addForbidden(); }
+});
+
+// ── LOAD DATA ─────────────────────────────────────
+async function loadData() {
+  const data = await dbGet('settings', 'key,value');
+  if (!Array.isArray(data)) return;
+
+  const map = {};
+  data.forEach(row => { map[row.key] = row.value; });
+
+  const set = (id, key) => { if (map[key] !== undefined) document.getElementById(id).value = map[key] || ''; };
+
+  set('hotelName',      'hotel_name');
+  set('hotelPhone',     'hotel_phone');
+  set('hotelAddress',   'hotel_address');
+  set('hotelEmail',     'hotel_email');
+  set('checkinTime',    'checkin_time');
+  set('checkoutTime',   'checkout_time');
+  set('receptionHours', 'reception_hours');
+  set('hotelDesc',      'hotel_description');
+  set('customTone',     'bot_custom_tone');
+  set('welcomeMsg',     'bot_welcome_msg');
+  set('fallbackMsg',    'bot_fallback_msg');
+
+  try { setActiveChips('servicesChips', JSON.parse(map['hotel_services'] || '[]')); } catch(e){}
+  try { setActiveChips('policiesChips', JSON.parse(map['hotel_policies'] || '[]')); } catch(e){}
+  try { setActiveChips('langsChips',    JSON.parse(map['bot_languages']  || '["es"]')); } catch(e){}
+  try { forbiddenItems = JSON.parse(map['bot_forbidden'] || '[]'); renderForbidden(); } catch(e){}
+
+  if (map['bot_personality']) setPersonality(map['bot_personality']);
+}
+
+// ── SAVE ──────────────────────────────────────────
+async function saveCurrentSection() {
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  let rows = [];
+
+  if (currentSection === 'info') {
+    rows = [
+      { key: 'hotel_name',        value: document.getElementById('hotelName').value },
+      { key: 'hotel_phone',       value: document.getElementById('hotelPhone').value },
+      { key: 'hotel_address',     value: document.getElementById('hotelAddress').value },
+      { key: 'hotel_email',       value: document.getElementById('hotelEmail').value },
+      { key: 'checkin_time',      value: document.getElementById('checkinTime').value },
+      { key: 'checkout_time',     value: document.getElementById('checkoutTime').value },
+      { key: 'reception_hours',   value: document.getElementById('receptionHours').value },
+      { key: 'hotel_description', value: document.getElementById('hotelDesc').value },
+      { key: 'hotel_services',    value: JSON.stringify(getActiveChips('servicesChips')) },
+      { key: 'hotel_policies',    value: JSON.stringify(getActiveChips('policiesChips')) },
+      { key: 'bot_languages',     value: JSON.stringify(getActiveChips('langsChips')) },
+    ];
+  }
+
+  if (currentSection === 'config') {
+    rows = [
+      { key: 'bot_personality',  value: getPersonality() },
+      { key: 'bot_custom_tone',  value: document.getElementById('customTone').value },
+      { key: 'bot_welcome_msg',  value: document.getElementById('welcomeMsg').value },
+      { key: 'bot_fallback_msg', value: document.getElementById('fallbackMsg').value },
+      { key: 'bot_forbidden',    value: JSON.stringify(forbiddenItems) },
+    ];
+  }
+
+  if (rows.length > 0) {
+    const ok = await dbUpsert('settings', rows);
+    if (ok) {
+      showToast('✓ Cambios guardados correctamente');
+    } else {
+      showToast('Error al guardar. Revisá la conexión.', 'error');
+    }
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Guardar cambios';
+}
+
+// ── QUESTIONS ─────────────────────────────────────
+async function loadQuestions() {
+  const data = await dbGet('chatbot_unanswered', '*', '&order=created_at.desc');
+
+  if (!Array.isArray(data) || data.error) {
+    // Tabla no existe todavía — mostrar estado vacío con instrucciones
+    document.getElementById('questionList').innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📋</div>
+        <p>La tabla <strong>chatbot_unanswered</strong> todavía no existe.<br>
+        Ejecutá el SQL del README para activar este módulo.</p>
+      </div>`;
+    document.getElementById('statTotal').textContent = '0';
+    document.getElementById('statPending').textContent = '0';
+    document.getElementById('statResolved').textContent = '0';
+    return;
+  }
+
+  allQuestions = data;
+  updateStats();
+  renderQuestions();
+  updateBadge();
+}
+
+function updateStats() {
+  const total    = allQuestions.length;
+  const pending  = allQuestions.filter(q => q.status === 'pending').length;
+  const resolved = allQuestions.filter(q => q.status === 'resolved').length;
+  document.getElementById('statTotal').textContent    = total;
+  document.getElementById('statPending').textContent  = pending;
+  document.getElementById('statResolved').textContent = resolved;
+}
+
+function updateBadge() {
+  const pending = allQuestions.filter(q => q.status === 'pending').length;
+  const badge = document.getElementById('badgeCount');
+  if (pending > 0) {
+    badge.textContent = pending;
+    badge.style.display = '';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+function filterQuestions(filter, el) {
+  currentFilter = filter;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  renderQuestions();
+}
+
+function renderQuestions() {
+  const list = document.getElementById('questionList');
+  let filtered = allQuestions;
+  if (currentFilter !== 'all') filtered = allQuestions.filter(q => q.status === currentFilter);
+
+  if (filtered.length === 0) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><p>No hay preguntas en esta categoría.</p></div>`;
+    return;
+  }
+
+  list.innerHTML = filtered.map(q => {
+    const date = new Date(q.created_at).toLocaleDateString('es-AR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+    const isP = q.status === 'pending';
+    const isI = q.status === 'ignored';
+    const iconClass = isP ? 'unanswered' : isI ? 'ignored' : 'added';
+    const icon = isP ? '?' : isI ? '–' : '✓';
+    return `
+      <div class="question-item" id="q-${q.id}">
+        <div class="q-icon ${iconClass}">${icon}</div>
+        <div class="q-body">
+          <div class="q-text">${escHtml(q.question)}</div>
+          <div class="q-meta">
+            <span>📅 ${date}</span>
+            ${q.frequency > 1 ? `<span>🔁 ${q.frequency} veces</span>` : ''}
+            ${q.context ? `<span>💬 "${escHtml(q.context.substring(0,40))}…"</span>` : ''}
+          </div>
+        </div>
+        ${isP ? `
+        <div class="q-actions">
+          <button class="q-btn resolve" onclick="resolveQuestion(${q.id})">✓ Resuelto</button>
+          <button class="q-btn ignore" onclick="ignoreQuestion(${q.id})">Ignorar</button>
+        </div>` : ''}
+      </div>`;
+  }).join('');
+}
+
+async function resolveQuestion(id) {
+  await dbUpdate('chatbot_unanswered', id, { status: 'resolved' });
+  allQuestions = allQuestions.map(q => q.id === id ? {...q, status:'resolved'} : q);
+  updateStats();
+  renderQuestions();
+  updateBadge();
+  showToast('Marcado como resuelto');
+}
+
+async function ignoreQuestion(id) {
+  await dbUpdate('chatbot_unanswered', id, { status: 'ignored' });
+  allQuestions = allQuestions.map(q => q.id === id ? {...q, status:'ignored'} : q);
+  updateStats();
+  renderQuestions();
+  updateBadge();
+}
+
+// ── UTILS ─────────────────────────────────────────
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── INIT ──────────────────────────────────────────
+initChips('servicesChips');
+initChips('policiesChips');
+initChips('langsChips');
+renderForbidden();
+loadData();
+</script>
+</body>
+</html>
