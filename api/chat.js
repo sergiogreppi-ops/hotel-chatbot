@@ -226,13 +226,25 @@ export default async function handler(req) {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405, headers: cors });
 
   try {
-    const { messages, lastQuote } = await req.json();
+    const body = await req.json();
+    const { messages, lastQuote, action } = body;
     const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
     if (!ANTHROPIC_API_KEY) return new Response(JSON.stringify({ error: "API key no configurada" }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });
 
     const { settings, rooms, prices } = await getStaticData();
     const hotelWhatsapp = settings["hotel_whatsapp"] || "";
     const hotelEmail    = settings["hotel_email"] || extractEmail(settings["tpl_confirmacion"] || "");
+
+    // Endpoint de configuración pública para el frontend
+    if (action === 'config') {
+      return new Response(JSON.stringify({
+        config: {
+          hotelName:  settings["hotel_name"]      || "",
+          welcomeMsg: settings["bot_welcome_msg"] || "",
+          enabled:    settings["bot_enabled"]     !== "false",
+        }
+      }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+    }
 
     // Verificar si el bot está activo
     if (settings["bot_enabled"] === "false") {
@@ -257,7 +269,14 @@ export default async function handler(req) {
         const qData = JSON.parse(reply.trim().replace("QUOTE_REQUEST:", ""));
         const discount = settings["discount"] || "0";
 
-        const extraInfo = `Información adicional:\n- No contamos con estacionamiento.\n- El desayuno está incluido.\n- Check-in 13:00 hs / Check-out 10:00 hs.\n- Las tarifas y promociones pueden variar si la reserva no queda confirmada.`;
+        // Armar info adicional desde admin — servicios y horarios ya configurados
+        const ci = settings["checkin_time"] || "";
+        const co = settings["checkout_time"] || "";
+        const horarios = ci && co ? `- Check-in ${ci} / Check-out ${co}.` : "";
+        const serviciosExtra = settings["quote_extra_info"] || "";
+        const extraLines = [serviciosExtra, horarios, "- Las tarifas y promociones pueden variar si la reserva no queda confirmada."]
+          .filter(Boolean).join("\n");
+        const extraInfo = `Información adicional:\n${extraLines}`;
 
         const quote = calcQuote(prices, qData.checkin, qData.checkout, qData.tipo, discount, extraInfo);
         if (quote && !quote.error) {

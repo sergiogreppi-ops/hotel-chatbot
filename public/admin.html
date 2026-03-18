@@ -261,6 +261,21 @@ body{font-family:'Geist Mono',monospace;background:var(--bg);color:var(--text);m
       </div>
 
       <div class="card">
+        <div class="card-title">Información adicional en cotizaciones</div>
+        <div class="card-hint">
+          Este texto aparece al final de cada cotización de precios que entrega el bot. Usalo para aclarar condiciones que aplican a todas las reservas.<br><br>
+          Escribí un ítem por línea con guión (-). Los horarios de check-in/check-out se agregan automáticamente desde los campos de arriba.
+        </div>
+        <div class="field">
+          <textarea class="textarea" id="quoteExtraInfo" style="min-height:100px"
+            placeholder="- No contamos con estacionamiento propio
+- El desayuno está incluido en todas las habitaciones
+- Las tarifas y promociones pueden variar si la reserva no queda confirmada"></textarea>
+          <div class="field-help">Estos ítems los ve el cliente cada vez que pide un precio. Mantenelo breve — máximo 4-5 líneas.</div>
+        </div>
+      </div>
+
+      <div class="card">
         <div class="card-title">Idiomas</div>
         <div class="card-hint">Si activás inglés o portugués, el bot detecta automáticamente el idioma del cliente y responde en ese idioma.</div>
         <div class="chips" id="langsChips">
@@ -497,6 +512,7 @@ async function loadData(){
   set('checkinTime','checkin_time'); set('checkoutTime','checkout_time');
   set('receptionHours','reception_hours'); set('hotelDesc','hotel_description');
   set('hotelServices','hotel_services'); set('hotelPolicies','hotel_policies');
+  set('quoteExtraInfo','quote_extra_info');
   set('customTone','bot_custom_tone'); set('welcomeMsg','bot_welcome_msg'); set('fallbackMsg','bot_fallback_msg');
   try{setActiveChips('langsChips',JSON.parse(map['bot_languages']||'["es"]'))}catch(e){}
   try{forbiddenItems=JSON.parse(map['bot_forbidden']||'[]');renderForbidden()}catch(e){}
@@ -521,6 +537,7 @@ async function saveCurrentSection(){
       {key:'hotel_description',value:document.getElementById('hotelDesc').value},
       {key:'hotel_services',value:document.getElementById('hotelServices').value},
       {key:'hotel_policies',value:document.getElementById('hotelPolicies').value},
+      {key:'quote_extra_info',value:document.getElementById('quoteExtraInfo').value},
       {key:'bot_languages',value:JSON.stringify(getActiveChips('langsChips'))},
     ];
   }

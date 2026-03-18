@@ -546,6 +546,18 @@ async function callAPI(messages, lastQuote = null) {
   return res.json();
 }
 
+async function loadChatConfig() {
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [], action: 'config' })
+    });
+    const data = await res.json();
+    return data.config || {};
+  } catch(e) { return {}; }
+}
+
 // ── CONTACT BUTTONS ───────────────────────────────────
 function buildContactButtons(data, whatsapp, email) {
   const nombre    = data.nombre    || '';
@@ -689,12 +701,29 @@ function escHtml(str) {
 }
 
 // ── INIT ──────────────────────────────────────────────
-function init() {
+async function init() {
   document.getElementById('loadingState').remove();
   setInputEnabled(true);
   inputEl.focus();
 
-  const { bubble } = addRow('bot', '¡Bienvenido/a! 🏨 Soy el asistente del hotel.<br><br>Puedo ayudarte con información sobre habitaciones, precios y conectarte con nuestro equipo para confirmar tu reserva.');
+  // Cargar config pública del hotel
+  const cfg = await loadChatConfig();
+
+  // Nombre del hotel en header y página
+  if (cfg.hotelName) {
+    document.title = cfg.hotelName + ' · Consultas';
+    const hName = document.querySelector('.h-name');
+    if (hName) hName.textContent = 'Asistente de ' + cfg.hotelName;
+    const h1 = document.querySelector('.page-header h1');
+    if (h1) h1.textContent = cfg.hotelName + ' · Consultas';
+    const footer = document.querySelector('.page-footer');
+    if (footer) footer.textContent = '© ' + cfg.hotelName + ' · Sistema de consultas';
+  }
+
+  // Mensaje de bienvenida desde admin o default
+  const welcomeMsg = cfg.welcomeMsg ||
+    `¡Bienvenido/a! 🏨 Soy el asistente del hotel.<br><br>Puedo ayudarte con información sobre habitaciones, precios y conectarte con nuestro equipo para confirmar tu reserva.`;
+  addRow('bot', welcomeMsg);
   addQuickReplies(['Ver habitaciones', 'Consultar precios', 'Quiero reservar']);
 }
 
