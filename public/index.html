@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hotel · Consultas y Reservas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #b8985a;
+    --gold-l: #d4b87a;
+    --dark: #1a1710;
+    --dark2: #2c2a24;
+    --cream: #faf7f2;
+    --gray: #6b6760;
+    --border: #e8e2d8;
+    --white: #ffffff;
+    --green: #22c55e;
+    --green-bg: #f0fdf4;
+    --green-border: #bbf7d0;
+    --green-text: #166534;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--cream);
+    background-image:
+      radial-gradient(ellipse at 15% 60%, rgba(184,152,90,.07) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 15%, rgba(184,152,90,.04) 0%, transparent 50%);
+  }
+
+  /* ── PAGE LAYOUT ─────────────────────────────── */
+  .page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    gap: 20px;
+  }
+
+  .page-header {
+    text-align: center;
+  }
+  .page-header h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(26px, 5vw, 40px);
+    font-weight: 300;
+    color: var(--dark);
+    letter-spacing: .04em;
+  }
+  .page-header p {
+    margin-top: 6px;
+    font-size: 13.5px;
+    color: var(--gray);
+    font-weight: 300;
+  }
+  .gold-line {
+    width: 48px; height: 1px;
+    background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    margin: 12px auto 0;
+  }
+
+  /* ── CHAT CARD ───────────────────────────────── */
+  .chat-card {
+    width: 100%;
+    max-width: 460px;
+    background: var(--white);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    box-shadow: 0 12px 48px rgba(0,0,0,.10), 0 2px 0 rgba(184,152,90,.25);
+    display: flex;
+    flex-direction: column;
+    height: clamp(500px, 70vh, 640px);
+    overflow: hidden;
+  }
+
+  /* header */
+  .chat-header {
+    background: var(--dark);
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  .chat-header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 20px; right: 20px;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(184,152,90,.5), transparent);
+  }
+  .h-avatar {
+    width: 38px; height: 38px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold), var(--gold-l));
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px; color: var(--dark); font-weight: 600; flex-shrink: 0;
+  }
+  .h-info { flex: 1; }
+  .h-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 16px; color: #fff; font-weight: 400; letter-spacing: .03em;
+  }
+  .h-status {
+    display: flex; align-items: center; gap: 5px; margin-top: 2px;
+  }
+  .h-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
+  .h-sub { font-size: 11px; color: rgba(255,255,255,.45); letter-spacing: .04em; }
+  .h-badge {
+    font-size: 10px; color: var(--gold);
+    border: 1px solid rgba(184,152,90,.35);
+    padding: 2px 8px; border-radius: 20px; letter-spacing: .07em;
+  }
+
+  /* messages */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    scroll-behavior: smooth;
+  }
+  .messages::-webkit-scrollbar { width: 3px; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .msg-row {
+    display: flex;
+    gap: 8px;
+    animation: fadeUp .25s ease;
+  }
+  .msg-row.user { flex-direction: row-reverse; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  .m-av {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 500; align-self: flex-end;
+  }
+  .m-av.bot { background: #f0ede8; color: var(--gray); border: 1px solid var(--border); font-family: 'Cormorant Garamond', serif; font-size: 13px; }
+  .m-av.user { background: var(--dark2); color: rgba(255,255,255,.7); }
+
+  .bubble {
+    max-width: 78%;
+    padding: 9px 13px;
+    border-radius: 16px;
+    font-size: 13.5px;
+    line-height: 1.55;
+  }
+  .bubble.bot {
+    background: #f9f8f5;
+    color: var(--dark);
+    border: 1px solid var(--border);
+    border-bottom-left-radius: 3px;
+  }
+  .bubble.user {
+    background: var(--dark2);
+    color: #fff;
+    border-bottom-right-radius: 3px;
+  }
+  .bubble.success {
+    background: var(--green-bg);
+    border-color: var(--green-border);
+    color: var(--green-text);
+  }
+
+  /* typing */
+  .typing-bubble {
+    padding: 10px 14px;
+    background: #f9f8f5;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    border-bottom-left-radius: 3px;
+    display: flex; gap: 4px; align-items: center;
+    width: fit-content;
+  }
+  .t-dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--gold);
+    animation: tdot 1.2s ease infinite;
+  }
+  .t-dot:nth-child(2){animation-delay:.2s}
+  .t-dot:nth-child(3){animation-delay:.4s}
+  @keyframes tdot{0%,60%,100%{transform:translateY(0);opacity:.35}30%{transform:translateY(-4px);opacity:1}}
+
+  /* quick replies */
+  .qr-wrap { padding-left: 34px; margin-top: 6px; display: flex; flex-wrap: wrap; gap: 5px; }
+  .qr-btn {
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    padding: 4px 12px; border-radius: 20px;
+    font-size: 12px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: all .15s;
+  }
+  .qr-btn:hover { background: var(--gold); color: #fff; }
+
+  /* handoff form */
+  .hf-form {
+    margin-top: 10px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 9px;
+  }
+  .hf-label { font-size: 10.5px; color: var(--gray); letter-spacing: .05em; margin-bottom: 3px; }
+  .hf-input {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 10px;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--dark);
+    background: var(--cream);
+    outline: none;
+    transition: border-color .2s;
+  }
+  .hf-input:focus { border-color: var(--gold); }
+  .hf-submit {
+    background: var(--dark);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background .2s;
+    margin-top: 2px;
+  }
+  .hf-submit:hover { background: var(--gold); }
+  .hf-submit:disabled { background: #ccc; cursor: not-allowed; }
+
+  /* system divider */
+  .sys-msg {
+    text-align: center;
+    font-size: 11px;
+    color: #ccc;
+    padding: 2px 0;
+    letter-spacing: .03em;
+  }
+
+  /* input area */
+  .input-area {
+    padding: 10px 12px 13px;
+    border-top: 1px solid var(--border);
+    background: #fff;
+    flex-shrink: 0;
+  }
+  .input-row { display: flex; gap: 8px; align-items: flex-end; }
+  .chat-input {
+    flex: 1;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 9px 15px;
+    font-size: 13.5px;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--dark);
+    background: var(--cream);
+    outline: none;
+    resize: none;
+    line-height: 1.4;
+    max-height: 90px;
+    transition: border-color .2s;
+  }
+  .chat-input:focus { border-color: var(--gold); }
+  .chat-input::placeholder { color: #c5c0b8; }
+  .send-btn {
+    width: 36px; height: 36px;
+    border-radius: 50%; border: none;
+    background: var(--dark); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: background .2s;
+  }
+  .send-btn:hover { background: var(--gold); }
+  .send-btn:disabled { background: #ccc; cursor: not-allowed; }
+  .input-hint {
+    text-align: center; font-size: 10.5px;
+    color: #ccc; margin-top: 7px; letter-spacing: .02em;
+  }
+
+  /* loading state */
+  .loading-state {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 12px;
+  }
+  .spinner {
+    width: 28px; height: 28px; border-radius: 50%;
+    border: 2px solid var(--border);
+    border-top-color: var(--gold);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .loading-text { font-size: 12.5px; color: var(--gray); }
+
+  /* ── PAGE FOOTER ─────────────────────────────── */
+  .page-footer {
+    font-size: 11px;
+    color: #c0bab3;
+    letter-spacing: .03em;
+  }
+
+  @media (max-width: 480px) {
+    .page { padding: 16px 10px; justify-content: flex-start; padding-top: 30px; }
+    .chat-card { height: calc(100vh - 120px); border-radius: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<main class="page">
+
+  <div class="page-header">
+    <h1>Hotel · Consultas</h1>
+    <div class="gold-line"></div>
+    <p>Consultá precios, habitaciones y hacé tu reserva</p>
+  </div>
+
+  <div class="chat-card">
+
+    <div class="chat-header">
+      <div class="h-avatar">H</div>
+      <div class="h-info">
+        <div class="h-name">Asistente del Hotel</div>
+        <div class="h-status">
+          <div class="h-dot"></div>
+          <span class="h-sub">EN LÍNEA</span>
+        </div>
+      </div>
+      <div class="h-badge">BETA</div>
+    </div>
+
+    <div class="messages" id="messages">
+      <div class="loading-state" id="loadingState">
+        <div class="spinner"></div>
+        <div class="loading-text">Conectando…</div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-row">
+        <textarea
+          class="chat-input"
+          id="chatInput"
+          placeholder="Escribí tu consulta…"
+          rows="1"
+          disabled
+        ></textarea>
+        <button class="send-btn" id="sendBtn" disabled>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+      <div class="input-hint">Solo consultas sobre habitaciones y precios · Powered by Claude</div>
+    </div>
+
+  </div>
+
+  <div class="page-footer">© Hotel · Sistema de consultas</div>
+
+</main>
+
+<script>
+// ── ESTADO ────────────────────────────────────────────
+const STATE = {
+  history: [],
+  thinking: false,
+  handoffStage: null,   // null | 'form' | 'done'
+  handoffMsgIndex: null,
+};
+
+const messagesEl = document.getElementById('messages');
+const inputEl    = document.getElementById('chatInput');
+const sendBtn    = document.getElementById('sendBtn');
+
+// ── HELPERS ───────────────────────────────────────────
+function scrollBottom() {
+  setTimeout(() => { messagesEl.scrollTop = messagesEl.scrollHeight; }, 60);
+}
+
+function addRow(role, html, extra = {}) {
+  const row = document.createElement('div');
+  row.className = `msg-row ${role}`;
+
+  const av = document.createElement('div');
+  av.className = `m-av ${role}`;
+  av.textContent = role === 'bot' ? 'H' : '✦';
+
+  const bubble = document.createElement('div');
+  bubble.className = `bubble ${role}${extra.success ? ' success' : ''}`;
+  bubble.innerHTML = html;
+
+  row.appendChild(av);
+  row.appendChild(bubble);
+  messagesEl.appendChild(row);
+  scrollBottom();
+  return { row, bubble };
+}
+
+function addSys(text) {
+  const d = document.createElement('div');
+  d.className = 'sys-msg';
+  d.textContent = text;
+  messagesEl.appendChild(d);
+  scrollBottom();
+}
+
+function showTyping() {
+  const row = document.createElement('div');
+  row.className = 'msg-row bot';
+  row.id = 'typingRow';
+  const av = document.createElement('div');
+  av.className = 'm-av bot';
+  av.textContent = 'H';
+  const b = document.createElement('div');
+  b.className = 'typing-bubble';
+  b.innerHTML = '<div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div>';
+  row.appendChild(av);
+  row.appendChild(b);
+  messagesEl.appendChild(row);
+  scrollBottom();
+}
+
+function hideTyping() {
+  document.getElementById('typingRow')?.remove();
+}
+
+function addQuickReplies(replies) {
+  const lastRow = messagesEl.querySelector('.msg-row.bot:last-of-type');
+  if (!lastRow) return;
+  const wrap = document.createElement('div');
+  wrap.className = 'qr-wrap';
+  replies.forEach(r => {
+    const btn = document.createElement('button');
+    btn.className = 'qr-btn';
+    btn.textContent = r;
+    btn.onclick = () => { wrap.remove(); processInput(r); };
+    wrap.appendChild(btn);
+  });
+  lastRow.after(wrap);
+  scrollBottom();
+}
+
+function setInputEnabled(enabled) {
+  inputEl.disabled = !enabled;
+  sendBtn.disabled = !enabled;
+}
+
+// ── HANDOFF FORM ─────────────────────────────────────
+function injectHandoffForm(bubble) {
+  const form = document.createElement('div');
+  form.className = 'hf-form';
+  form.innerHTML = `
+    <div>
+      <div class="hf-label">TU NOMBRE</div>
+      <input class="hf-input" id="hfName" placeholder="Ej: María García" />
+    </div>
+    <div>
+      <div class="hf-label">TELÉFONO (WhatsApp)</div>
+      <input class="hf-input" id="hfPhone" placeholder="Ej: 1112345678" type="tel" />
+    </div>
+    <button class="hf-submit" id="hfSubmit" disabled>Enviar mis datos →</button>
+  `;
+  bubble.appendChild(form);
+
+  const nameEl  = document.getElementById('hfName');
+  const phoneEl = document.getElementById('hfPhone');
+  const btnEl   = document.getElementById('hfSubmit');
+
+  const checkReady = () => { btnEl.disabled = !nameEl.value.trim() || !phoneEl.value.trim(); };
+  nameEl.addEventListener('input', checkReady);
+  phoneEl.addEventListener('input', checkReady);
+  btnEl.addEventListener('click', () => submitHandoff(nameEl.value.trim(), phoneEl.value.trim(), bubble));
+  scrollBottom();
+}
+
+async function submitHandoff(name, phone, bubble) {
+  // Guardar lead
+  try {
+    await fetch(`https://ozjqqgwcztuummvwpgfu.supabase.co/rest/v1/chatbot_leads`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96anFxZ3djenR1dW1tdndwZ2Z1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MTA3NzIsImV4cCI6MjA2NjQ4Njc3Mn0.7L7TliaKQllfY4nF5J8Kh3D0TkeVFoPLjbt2nQ0Er0o',
+        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96anFxZ3djenR1dW1tdndwZ2Z1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MTA3NzIsImV4cCI6MjA2NjQ4Njc3Mn0.7L7TliaKQllfY4nF5J8Kh3D0TkeVFoPLjbt2nQ0Er0o',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify({
+        name, phone,
+        context: STATE.history.slice(-8).map(m => `${m.role}: ${m.content}`).join('\n'),
+        created_at: new Date().toISOString()
+      })
+    });
+  } catch(e) { console.log('Lead guardado localmente'); }
+
+  STATE.handoffStage = 'done';
+
+  // Reemplazar form con banner
+  const form = bubble.querySelector('.hf-form');
+  if (form) {
+    form.outerHTML = '';
+    bubble.querySelector('.hf-form')?.remove();
+  }
+  bubble.classList.add('success');
+  bubble.innerHTML = `✓ <strong>¡Listo, ${name}!</strong> Nuestro equipo se comunicará al <strong>${phone}</strong> para confirmar disponibilidad y cerrar tu reserva.`;
+
+  addSys('— conversación derivada al equipo —');
+  addRow('bot', 'Mientras tanto podés seguir consultando lo que necesites 😊');
+  addQuickReplies(['Consultar otras fechas', 'Ver habitaciones']);
+  scrollBottom();
+}
+
+// ── API CALL ──────────────────────────────────────────
+async function callAPI(messages) {
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ messages })
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  return data.reply;
+}
+
+// ── PROCESS MESSAGE ───────────────────────────────────
+async function processInput(text) {
+  if (!text.trim() || STATE.thinking) return;
+  STATE.thinking = true;
+  setInputEnabled(false);
+
+  // Limpiar QRs
+  document.querySelectorAll('.qr-wrap').forEach(el => el.remove());
+
+  addRow('user', escHtml(text));
+  showTyping();
+
+  const newHistory = [...STATE.history, { role: 'user', content: text }];
+
+  try {
+    const reply = await callAPI(newHistory);
+    hideTyping();
+
+    if (reply.trim() === 'HANDOFF_REQUESTED') {
+      STATE.handoffStage = 'form';
+      const { bubble } = addRow('bot', '¡Perfecto! Para conectarte con nuestro equipo y confirmar disponibilidad, necesito tus datos:');
+      injectHandoffForm(bubble);
+      STATE.history = newHistory;
+    } else {
+      STATE.history = [...newHistory, { role: 'assistant', content: reply }];
+      addRow('bot', escHtml(reply).replace(/\n/g, '<br>'));
+
+      const low = text.toLowerCase();
+      if (low.includes('hola') || low.includes('informaci') || low.match(/^(buenas|hola|buen)/)) {
+        addQuickReplies(['Ver habitaciones', 'Consultar precios', 'Quiero reservar']);
+      } else if (reply.toLowerCase().includes('doble') || reply.toLowerCase().includes('triple') || reply.toLowerCase().includes('precio')) {
+        addQuickReplies(['Quiero reservar', 'Consultar otras fechas']);
+      }
+    }
+  } catch(e) {
+    hideTyping();
+    addRow('bot', 'Hubo un problema al procesar tu consulta. Por favor intentá de nuevo.');
+    console.error(e);
+  }
+
+  STATE.thinking = false;
+  setInputEnabled(true);
+  inputEl.focus();
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── INIT ──────────────────────────────────────────────
+function init() {
+  document.getElementById('loadingState').remove();
+  setInputEnabled(true);
+  inputEl.focus();
+
+  const { bubble } = addRow('bot', '¡Bienvenido/a! 🏨 Soy el asistente del hotel.<br><br>Puedo ayudarte con información sobre habitaciones, precios y conectarte con nuestro equipo para confirmar tu reserva.');
+  addQuickReplies(['Ver habitaciones', 'Consultar precios', 'Quiero reservar']);
+}
+
+// Input handlers
+sendBtn.addEventListener('click', () => {
+  processInput(inputEl.value);
+  inputEl.value = '';
+  inputEl.style.height = 'auto';
+});
+
+inputEl.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    processInput(inputEl.value);
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+  }
+});
+
+inputEl.addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 90) + 'px';
+});
+
+// Arrancar
+init();
+</script>
+</body>
+</html>
