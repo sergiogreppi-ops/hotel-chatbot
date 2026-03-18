@@ -208,8 +208,8 @@ INSTRUCCIONES:
 - Cuando el cliente pida precio para fechas concretas y tengas checkin, checkout y tipo de habitación, respondé EXACTAMENTE con este JSON (sin texto adicional):
 QUOTE_REQUEST:{"checkin":"YYYY-MM-DD","checkout":"YYYY-MM-DD","tipo":"doble|triple|cuadruple"}
 - Si el cliente no especificó las fechas o el tipo de habitación, preguntale solo lo que falta. Nunca preguntes cantidad de personas si ya sabés el tipo, ni el tipo si ya sabés las personas.
-- Si el cliente quiere CONFIRMAR o RESERVAR, los únicos datos que necesitás son: nombre, fechas, tipo de habitación y cantidad de personas. NUNCA pidas teléfono ni email. Cuando tengas los 4 datos, respondé ÚNICA Y EXCLUSIVAMENTE con el JSON, sin ningún texto antes ni después, sin saludos, sin resumen, sin explicación:
-HANDOFF_JSON:{"nombre":"...","checkin":"...","checkout":"...","habitacion":"...","personas":"...","precio":"..."}
+- Si el cliente quiere CONFIRMAR o RESERVAR, los únicos datos que necesitás son: nombre, fechas, tipo de habitación, cantidad de personas y tipo de cama (matrimonial o separadas, solo aplica para doble). NUNCA pidas teléfono ni email. Cuando tengas todos los datos, respondé ÚNICA Y EXCLUSIVAMENTE con el JSON, sin ningún texto antes ni después:
+HANDOFF_JSON:{"nombre":"...","checkin":"...","checkout":"...","habitacion":"...","personas":"...","precio":"...","cama":"..."}
 - Si faltan datos para el handoff, preguntá de a uno.
 - Si la consulta no es sobre el hotel: OUT_OF_SCOPE
 - Si no tenés información suficiente: UNANSWERED`;
@@ -322,7 +322,21 @@ export default async function handler(req) {
           habitacion: raw.habitacion || lastQuote?.habitacion || "",
           personas:   raw.personas   || lastQuote?.personas   || "",
           precio:     raw.precio     || lastQuote?.precio     || "",
+          cama:       raw.cama       || "",
         };
+
+        // Si no hay precio, calcularlo ahora
+        if (!handoffData.precio && handoffData.checkin && handoffData.checkout && handoffData.habitacion) {
+          const discount = settings["discount"] || "0";
+          const tipo = handoffData.habitacion.toLowerCase().includes("triple") ? "triple"
+                     : handoffData.habitacion.toLowerCase().includes("cuádruple") || handoffData.habitacion.toLowerCase().includes("cuadruple") ? "cuadruple"
+                     : "doble";
+          const q = calcQuote(prices, handoffData.checkin, handoffData.checkout, tipo, discount);
+          if (q && !q.error) {
+            handoffData.precio = q.totalSinDesc;
+            handoffData.habitacion = tipo; // normalizar
+          }
+        }
         try {
           await insertSupabase("chatbot_leads", {
             name: handoffData.nombre,

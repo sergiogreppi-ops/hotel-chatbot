@@ -566,13 +566,13 @@ function buildContactButtons(data, whatsapp, email) {
   const hab       = data.habitacion|| '';
   const personas  = data.personas  || '';
   const precio    = data.precio    || '';
+  const cama      = data.cama      || '';
 
-  // Sin emojis — WhatsApp los codifica mal en algunos dispositivos
   const msgText = [
     'Hola! Quiero hacer una reserva.',
     '',
     'Nombre: ' + nombre,
-    'Habitacion: ' + hab,
+    'Habitacion: ' + hab + (cama ? ' (' + cama + ')' : ''),
     'Personas: ' + personas,
     'Check-in: ' + checkin,
     'Check-out: ' + checkout,
@@ -600,7 +600,7 @@ function buildContactButtons(data, whatsapp, email) {
     <div class="contact-card">
       <div class="contact-summary">
         <div class="cs-row"><span>👤</span><span>${escHtml(nombre)}</span></div>
-        <div class="cs-row"><span>🛏️</span><span>${escHtml(hab)} · ${escHtml(personas)} personas</span></div>
+        <div class="cs-row"><span>🛏️</span><span>${escHtml(hab)}${cama ? ' · ' + escHtml(cama) : ''} · ${escHtml(personas)} personas</span></div>
         <div class="cs-row"><span>📅</span><span>${escHtml(checkin)} → ${escHtml(checkout)}</span></div>
         ${precio ? `<div class="cs-row"><span>💰</span><span>${escHtml(precio)}</span></div>` : ''}
       </div>
