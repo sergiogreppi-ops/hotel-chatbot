@@ -675,9 +675,13 @@ async function processInput(text) {
       btnNo.textContent = 'No, solo consultaba';
       btnNo.onclick = () => {
         btnWrap.remove();
+        // Agregar al historial que el cliente NO quiere reservar
+        // así el bot no sigue en modo reserva pero recuerda los datos anteriores
+        STATE.history.push({ role: 'assistant', content: '¿Querés confirmar la reserva?' });
+        STATE.history.push({ role: 'user', content: 'No, solo quería consultar el precio.' });
+        STATE.pendingHandoff = null;
         addRow('bot', '¡Perfecto! Si necesitás algo más, estoy acá.');
         addQuickReplies(['Consultar otras fechas', 'Ver habitaciones']);
-        STATE.pendingHandoff = null;
       };
 
       btnWrap.appendChild(btnSi);
