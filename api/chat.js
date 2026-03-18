@@ -3,6 +3,34 @@ export const config = { runtime: "edge" };
 const SUPABASE_URL = "https://ozjqqgwcztuummvwpgfu.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96anFxZ3djenR1dW1tdndwZ2Z1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MTA3NzIsImV4cCI6MjA2NjQ4Njc3Mn0.7L7TliaKQllfY4nF5J8Kh3D0TkeVFoPLjbt2nQ0Er0o";
 
+// ── CACHÉ 6 HORAS ─────────────────────────────────────
+const CACHE_TTL = 6 * 60 * 60 * 1000;
+let cache = { data: null, ts: 0 };
+
+async function getStaticData() {
+  const now = Date.now();
+  if (cache.data && (now - cache.ts) < CACHE_TTL) return cache.data;
+
+  const today = new Date().toISOString().split("T")[0];
+  const future = new Date(); future.setMonth(future.getMonth() + 6);
+  const futureStr = future.toISOString().split("T")[0];
+
+  const [settingsData, roomsData, pricesData] = await Promise.all([
+    fetchSupabase("settings", "key,value"),
+    fetchSupabase("rooms", "id,name", "&order=id"),
+    fetchSupabase("daily_prices", "date,doble,triple,cuadruple", `&date=gte.${today}&date=lte.${futureStr}&order=date`),
+  ]);
+
+  const settings = {};
+  if (Array.isArray(settingsData)) settingsData.forEach(s => { settings[s.key] = s.value; });
+  const rooms = Array.isArray(roomsData) ? roomsData : [];
+  const prices = {};
+  if (Array.isArray(pricesData)) pricesData.forEach(p => { prices[p.date] = { doble: p.doble, triple: p.triple, cuadruple: p.cuadruple }; });
+
+  cache = { data: { settings, rooms, prices }, ts: now };
+  return cache.data;
+}
+
 async function fetchSupabase(table, select = "*", params = "") {
   const url = `${SUPABASE_URL}/rest/v1/${table}?select=${encodeURIComponent(select)}${params}`;
   const res = await fetch(url, {
@@ -194,25 +222,13 @@ export default async function handler(req) {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405, headers: cors });
 
   try {
-    const { messages } = await req.json();
+    const { messages, lastQuote } = await req.json();
     const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
     if (!ANTHROPIC_API_KEY) return new Response(JSON.stringify({ error: "API key no configurada" }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });
 
-    const today = new Date().toISOString().split("T")[0];
-    const future = new Date(); future.setMonth(future.getMonth() + 6);
-    const futureStr = future.toISOString().split("T")[0];
-
-    const [settingsData, roomsData, pricesData] = await Promise.all([
-      fetchSupabase("settings", "key,value"),
-      fetchSupabase("rooms", "id,name", "&order=id"),
-      fetchSupabase("daily_prices", "date,doble,triple,cuadruple", `&date=gte.${today}&date=lte.${futureStr}&order=date`),
-    ]);
-
-    const settings = {};
-    if (Array.isArray(settingsData)) settingsData.forEach(s => { settings[s.key] = s.value; });
-    const rooms = Array.isArray(roomsData) ? roomsData : [];
-    const prices = {};
-    if (Array.isArray(pricesData)) pricesData.forEach(p => { prices[p.date] = { doble: p.doble, triple: p.triple, cuadruple: p.cuadruple }; });
+    const { settings, rooms, prices } = await getStaticData();
+    const hotelWhatsapp = settings["hotel_whatsapp"] || "";
+    const hotelEmail    = settings["hotel_email"] || extractEmail(settings["tpl_confirmacion"] || "");
 
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -267,25 +283,34 @@ export default async function handler(req) {
 
     if (reply.trim().startsWith("HANDOFF_JSON:")) {
       try {
-        handoffData = JSON.parse(reply.trim().replace("HANDOFF_JSON:", ""));
-        // Guardar lead en Supabase
+        const raw = JSON.parse(reply.trim().replace("HANDOFF_JSON:", ""));
+        // Completar con lastQuote si faltan datos
+        const handoffData = {
+          nombre:     raw.nombre     || "",
+          checkin:    raw.checkin    || lastQuote?.checkin    || "",
+          checkout:   raw.checkout   || lastQuote?.checkout   || "",
+          habitacion: raw.habitacion || lastQuote?.habitacion || "",
+          personas:   raw.personas   || lastQuote?.personas   || "",
+          precio:     raw.precio     || lastQuote?.precio     || "",
+        };
         try {
           await insertSupabase("chatbot_leads", {
-            name: handoffData.nombre || "",
+            name: handoffData.nombre,
             phone: "",
             context: `Hab: ${handoffData.habitacion}, Personas: ${handoffData.personas}, Fechas: ${handoffData.checkin} → ${handoffData.checkout}, Precio: ${handoffData.precio}`,
             created_at: new Date().toISOString(),
           });
         } catch(e) {}
         finalReply = "HANDOFF_READY";
-      } catch(e) {
-        finalReply = reply;
-      }
+        return new Response(JSON.stringify({ reply: "HANDOFF_READY", handoffData, hotelWhatsapp, hotelEmail }), {
+          status: 200, headers: { ...cors, "Content-Type": "application/json" },
+        });
+      } catch(e) { finalReply = reply; }
     } else if (reply.trim() === "OUT_OF_SCOPE" || reply.trim() === "UNANSWERED") {
       finalReply = settings["bot_fallback_msg"] || "Esa consulta está fuera de mis posibilidades. Podés contactarnos directamente.";
     }
 
-    return new Response(JSON.stringify({ reply: finalReply, handoffData, hotelWhatsapp: settings["hotel_whatsapp"] || "", hotelEmail: settings["hotel_email"] || "" }), {
+    return new Response(JSON.stringify({ reply: finalReply, handoffData: null, hotelWhatsapp, hotelEmail }), {
       status: 200, headers: { ...cors, "Content-Type": "application/json" },
     });
 

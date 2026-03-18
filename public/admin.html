@@ -1034,12 +1034,46 @@ function escHtml(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
 
-// ── INIT ──────────────────────────────────────────
-initChips('servicesChips');
-initChips('policiesChips');
-initChips('langsChips');
-renderForbidden();
-loadData();
+// ── LOGIN ──────────────────────────────────────────
+const LOGIN_HTML = `
+<div id="loginScreen" style="position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999;">
+  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:36px 32px;width:320px;text-align:center;">
+    <div style="font-family:'Instrument Serif',serif;font-size:22px;color:var(--gold);margin-bottom:6px;">Hotel Admin</div>
+    <div style="font-size:11px;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:28px;">Panel de control</div>
+    <input type="password" id="pinInput" placeholder="Contraseña" style="width:100%;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--radius-sm);padding:10px 14px;font-family:'Geist Mono',monospace;font-size:14px;color:var(--text);outline:none;text-align:center;letter-spacing:.15em;margin-bottom:10px;"
+      onkeydown="if(event.key==='Enter')checkPin()" />
+    <div id="pinError" style="font-size:11px;color:var(--red);min-height:16px;margin-bottom:10px;"></div>
+    <button onclick="checkPin()" style="width:100%;background:var(--gold);color:#0a0a0a;border:none;border-radius:var(--radius-sm);padding:10px;font-family:'Geist Mono',monospace;font-size:12px;font-weight:500;cursor:pointer;letter-spacing:.05em;">Ingresar</button>
+  </div>
+</div>`;
+
+document.body.insertAdjacentHTML('beforeend', LOGIN_HTML);
+
+async function checkPin() {
+  const input = document.getElementById('pinInput').value.trim();
+  if (!input) return;
+  // Leer cleaning_pin de Supabase
+  const data = await dbGet('settings', 'value', `&key=eq.cleaning_pin`);
+  const correctPin = Array.isArray(data) && data[0] ? data[0].value : null;
+  if (!correctPin || input === correctPin) {
+    document.getElementById('loginScreen').remove();
+    initAdmin();
+  } else {
+    document.getElementById('pinError').textContent = 'Contraseña incorrecta.';
+    document.getElementById('pinInput').value = '';
+    document.getElementById('pinInput').focus();
+  }
+}
+
+function initAdmin() {
+  initChips('servicesChips');
+  initChips('policiesChips');
+  initChips('langsChips');
+  renderForbidden();
+  loadData();
+}
+
+document.getElementById('pinInput')?.focus();
 </script>
 </body>
 </html>

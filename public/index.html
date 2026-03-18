@@ -454,8 +454,8 @@
 const STATE = {
   history: [],
   thinking: false,
-  handoffStage: null,   // null | 'form' | 'done'
-  handoffMsgIndex: null,
+  handoffStage: null,
+  lastQuote: null,  // { checkin, checkout, tipo, personas, precio }
 };
 
 const messagesEl = document.getElementById('messages');
@@ -536,11 +536,11 @@ function setInputEnabled(enabled) {
 }
 
 // ── API CALL ──────────────────────────────────────────
-async function callAPI(messages) {
+async function callAPI(messages, lastQuote = null) {
   const res = await fetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages })
+    body: JSON.stringify({ messages, lastQuote })
   });
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
@@ -555,7 +555,17 @@ function buildContactButtons(data, whatsapp, email) {
   const personas  = data.personas  || '';
   const precio    = data.precio    || '';
 
-  const msgText = `Hola! Quiero hacer una reserva.\n\n👤 Nombre: ${nombre}\n🛏️ Habitación: ${hab}\n👥 Personas: ${personas}\n📅 Check-in: ${checkin}\n📅 Check-out: ${checkout}${precio ? `\n💰 Precio cotizado: ${precio}` : ''}`;
+  // Sin emojis — WhatsApp los codifica mal en algunos dispositivos
+  const msgText = [
+    'Hola! Quiero hacer una reserva.',
+    '',
+    'Nombre: ' + nombre,
+    'Habitacion: ' + hab,
+    'Personas: ' + personas,
+    'Check-in: ' + checkin,
+    'Check-out: ' + checkout,
+    precio ? 'Precio cotizado: ' + precio : '',
+  ].filter(Boolean).join('\n');
 
   const waNum    = (whatsapp || '').replace(/\D/g, '');
   const waLink   = waNum ? `https://wa.me/${waNum}?text=${encodeURIComponent(msgText)}` : null;
@@ -601,10 +611,14 @@ async function processInput(text) {
   addRow('user', escHtml(text));
   showTyping();
 
+  // Pasar lastQuote al historial como contexto para el handoff
+  const historyToSend = STATE.lastQuote
+    ? [...STATE.history, { role: 'system_hint', content: JSON.stringify(STATE.lastQuote) }]
+    : STATE.history;
   const newHistory = [...STATE.history, { role: 'user', content: text }];
 
   try {
-    const result = await callAPI(newHistory);
+    const result = await callAPI(newHistory, STATE.lastQuote);
     const { reply, handoffData, hotelWhatsapp, hotelEmail } = result;
     hideTyping();
 
@@ -616,7 +630,23 @@ async function processInput(text) {
       addSys('— reserva lista para confirmar —');
     } else {
       STATE.history = [...newHistory, { role: 'assistant', content: reply }];
-      // Detectar y linkear teléfono/whatsapp/email en respuestas normales
+
+      // Guardar cotización en STATE si la respuesta tiene ese formato
+      if (reply.includes('Check In:') && reply.includes('seña')) {
+        const checkinM  = reply.match(/Check In:\s*([^\n\/]+)/);
+        const checkoutM = reply.match(/Check Out:\s*([^\n]+)/);
+        const tipoM     = reply.match(/Habitación:\s*([^\n]+)/);
+        const precioM   = reply.match(/Total de la estadía:\s*([^\n]+)/);
+        if (checkinM && checkoutM && tipoM) {
+          STATE.lastQuote = {
+            checkin:    checkinM[1].trim(),
+            checkout:   checkoutM[1].trim(),
+            habitacion: tipoM[1].trim(),
+            precio:     precioM ? precioM[1].trim() : '',
+          };
+        }
+      }
+
       const linkedReply = linkifyContacts(escHtml(reply).replace(/\n/g, '<br>'), hotelWhatsapp, hotelEmail);
       addRow('bot', linkedReply);
 
