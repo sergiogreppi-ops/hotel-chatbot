@@ -202,7 +202,7 @@ ${priceLines || "Sin tarifas cargadas."}
 INSTRUCCIONES:
 - Respondé en español. Máximo 2 oraciones salvo cuando mostrás una cotización.
 - Cuando el cliente pida precio para fechas concretas y tengas checkin, checkout y tipo de habitación, respondé EXACTAMENTE con este JSON (sin texto adicional):
-QUOTE_REQUEST:{"checkin":"DD-MM-YYYY","checkout":"DD-MM-YYYY","tipo":"doble|triple|cuadruple"}
+QUOTE_REQUEST:{"checkin":"YYYY-MM-DD","checkout":"YYYY-MM-DD","tipo":"doble|triple|cuadruple"}
 - Si el cliente no especificó las fechas o el tipo de habitación, preguntale solo lo que falta.
 - Si el cliente quiere CONFIRMAR o RESERVAR, los únicos datos que necesitás son: nombre, fechas, tipo de habitación y cantidad de personas. NUNCA pidas teléfono ni email — esos datos los obtiene el hotel por WhatsApp cuando el cliente confirma. Cuando tengas los 4 datos respondé EXACTAMENTE:
 HANDOFF_JSON:{"nombre":"...","checkin":"...","checkout":"...","habitacion":"...","personas":"...","precio":"..."}
