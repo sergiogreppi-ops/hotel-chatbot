@@ -643,12 +643,12 @@ function linkifyContacts(html, whatsapp, email) {
   if (whatsapp) {
     const waNum = whatsapp.replace(/\D/g, '');
     const waEsc = escHtml(whatsapp);
-    html = html.replace(new RegExp(waEsc, 'g'),
+    html = html.split(waEsc).join(
       `<a href="https://wa.me/${waNum}" target="_blank" style="color:var(--gold);text-decoration:underline;">${waEsc}</a>`);
   }
   if (email) {
     const emailEsc = escHtml(email);
-    html = html.replace(new RegExp(emailEsc, 'g'),
+    html = html.split(emailEsc).join(
       `<a href="mailto:${emailEsc}" style="color:var(--gold);text-decoration:underline;">${emailEsc}</a>`);
   }
   return html;
