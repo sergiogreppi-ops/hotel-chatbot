@@ -47,6 +47,7 @@ function buildSystemPrompt(settings, rooms, prices) {
   const hotelWhatsapp= settings["hotel_whatsapp"]     || "";
   const hotelAddress = settings["hotel_address"]      || "";
   const hotelEmail   = settings["hotel_email"] || extractEmail(settings["tpl_confirmacion"] || "");
+  const discount     = parseFloat(settings["discount"] || "0") / 100;
   const checkin      = settings["checkin_time"]       || "";
   const checkout     = settings["checkout_time"]      || "";
   const reception    = settings["reception_hours"]    || "";
@@ -62,7 +63,24 @@ function buildSystemPrompt(settings, rooms, prices) {
   const langNote  = languages.includes("en") ? " Si el cliente escribe en inglés, respondé en inglés." : "";
   const langNoteP = languages.includes("pt") ? " Si el cliente escribe en portugués, respondé en portugués." : "";
 
-  const priceLines = Object.entries(prices)
+  // Calcular ejemplo de cotización para que la IA entienda el formato
+  // (la IA va a replicar esta lógica con los valores reales)
+  const r100  = (n) => Math.round(n / 100) * 100;
+  const r1000 = (n) => Math.round(n / 1000) * 1000;
+  const descPorc = Math.round(discount * 100);
+
+  function calcQuote(total) {
+    const conDesc   = r100(total * (1 - discount));
+    const saldo     = r1000(conDesc * (1 - 0.333));
+    const senia     = conDesc - saldo;
+    const saldoSD   = total - senia;
+    return { total, conDesc, senia, saldo, saldoSD, descPorc };
+  }
+
+  // Ejemplo con $100.000 para que la IA entienda la lógica
+  const ej = calcQuote(100000);
+
+
     .slice(0, 60)
     .map(([d, p]) => `${d}: doble=${fmt(p.doble)||"N/D"}, triple=${fmt(p.triple)||"N/D"}, cuádruple=${fmt(p.cuadruple)||"N/D"}`)
     .join("\n");
@@ -89,6 +107,42 @@ ${description ? `- Descripción: ${description}` : ""}
 ${services ? `\nSERVICIOS:\n${services}` : ""}
 ${policies ? `\nPOLÍTICAS:\n${policies}` : ""}
 ${forbiddenBlock}
+
+HABITACIONES: ${roomList}
+HOY: ${today}
+
+TARIFAS POR NOCHE:
+${priceLines || "Sin tarifas cargadas."}
+
+CÓMO CALCULAR Y PRESENTAR UNA COTIZACIÓN:
+Cuando el cliente pregunta el precio para fechas específicas, calculá el total sumando las tarifas noche por noche, luego aplicá esta lógica EXACTA (igual que la app de reservas):
+
+1. totalSinDescuento = suma de tarifas de cada noche
+2. totalConDescuento = redondear al $100 más cercano (totalSinDescuento × ${1 - discount})
+3. saldoEfectivo     = redondear al $1000 más cercano (totalConDescuento × 0.667)
+4. senia             = totalConDescuento - saldoEfectivo
+5. saldoSinDescuento = totalSinDescuento - senia
+
+EJEMPLO con total $${ej.total.toLocaleString("es-AR")}:
+- Total sin descuento: $${ej.total.toLocaleString("es-AR")}
+- Total con descuento (${ej.descPorc}% off en efectivo): $${ej.conDesc.toLocaleString("es-AR")}
+- Seña: $${ej.senia.toLocaleString("es-AR")}
+- Saldo sin descuento: $${ej.saldoSD.toLocaleString("es-AR")}
+- Saldo en efectivo: $${ej.saldo.toLocaleString("es-AR")}
+
+FORMATO DE RESPUESTA para cotizaciones (usá exactamente este formato):
+Habitación: [tipo]
+Check In: [fecha] / Check Out: [fecha]
+Noches: [n]
+Total de la estadía: $[total_sin_descuento] en un pago.
+
+Promoción: -${descPorc}% de descuento en efectivo: $[total_con_descuento]
+
+Para confirmar la reserva se le pedirá una seña de $[senia] por transferencia bancaria.
+
+El saldo restante se abona al llegar:
+$[saldo_sin_desc] con cualquier medio de pago.
+$[saldo_efectivo] pagando en efectivo (con descuento).`;
 
 HABITACIONES: ${roomList}
 HOY: ${today}
