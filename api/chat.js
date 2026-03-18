@@ -281,7 +281,9 @@ export default async function handler(req) {
 
         const quote = calcQuote(prices, qData.checkin, qData.checkout, qData.tipo, discount, extraInfo);
         if (quote && !quote.error) {
-          return new Response(JSON.stringify({ reply: quote.text, hotelWhatsapp: settings["hotel_whatsapp"] || "", hotelEmail: settings["hotel_email"] || extractEmail(settings["tpl_confirmacion"] || "") }), {
+          // Siempre agregar pregunta de confirmación al final de la cotización
+          const quoteWithConfirm = quote.text + "\n\n¿Querés confirmar la reserva?";
+          return new Response(JSON.stringify({ reply: quoteWithConfirm, quoteData: { checkin: qData.checkin, checkout: qData.checkout, tipo: qData.tipo, precio: quote.totalSinDesc }, hotelWhatsapp: settings["hotel_whatsapp"] || "", hotelEmail: settings["hotel_email"] || extractEmail(settings["tpl_confirmacion"] || "") }), {
             status: 200, headers: { ...cors, "Content-Type": "application/json" },
           });
         } else {
@@ -326,16 +328,26 @@ export default async function handler(req) {
           cama:       raw.cama       || "",
         };
 
-        // Si no hay precio, calcularlo ahora
-        if (!handoffData.precio && handoffData.checkin && handoffData.checkout && handoffData.habitacion) {
-          const discount = settings["discount"] || "0";
-          const tipo = handoffData.habitacion.toLowerCase().includes("triple") ? "triple"
-                     : handoffData.habitacion.toLowerCase().includes("cuádruple") || handoffData.habitacion.toLowerCase().includes("cuadruple") ? "cuadruple"
-                     : "doble";
-          const q = calcQuote(prices, handoffData.checkin, handoffData.checkout, tipo, discount);
+        // Siempre calcular cotización completa — con o sin precio previo
+        const discount = settings["discount"] || "0";
+        const tipo = handoffData.habitacion.toLowerCase().includes("triple") ? "triple"
+                   : handoffData.habitacion.toLowerCase().includes("cuádruple") || handoffData.habitacion.toLowerCase().includes("cuadruple") ? "cuadruple"
+                   : "doble";
+
+        let quoteText = null;
+        if (handoffData.checkin && handoffData.checkout) {
+          const ci = settings["checkin_time"] || "";
+          const co = settings["checkout_time"] || "";
+          const horarios = ci && co ? `- Check-in ${ci} / Check-out ${co}.` : "";
+          const serviciosExtra = settings["quote_extra_info"] || "";
+          const extraLines = [serviciosExtra, horarios, "- Las tarifas y promociones pueden variar si la reserva no queda confirmada."]
+            .filter(Boolean).join("\n");
+          const extraInfo = `Información adicional:\n${extraLines}`;
+          const q = calcQuote(prices, handoffData.checkin, handoffData.checkout, tipo, discount, extraInfo);
           if (q && !q.error) {
             handoffData.precio = q.totalSinDesc;
-            handoffData.habitacion = tipo; // normalizar
+            handoffData.habitacion = tipo;
+            quoteText = q.text;
           }
         }
         try {
@@ -346,7 +358,7 @@ export default async function handler(req) {
             created_at: new Date().toISOString(),
           });
         } catch(e) {}
-        return new Response(JSON.stringify({ reply: "HANDOFF_READY", handoffData, hotelWhatsapp, hotelEmail }), {
+        return new Response(JSON.stringify({ reply: "QUOTE_BEFORE_HANDOFF", handoffData, quoteText, hotelWhatsapp, hotelEmail }), {
           status: 200, headers: { ...cors, "Content-Type": "application/json" },
         });
       } catch(e) { /* continúa */ }

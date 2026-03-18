@@ -455,8 +455,19 @@ const STATE = {
   history: [],
   thinking: false,
   handoffStage: null,
-  lastQuote: null,  // { checkin, checkout, tipo, personas, precio }
+  lastQuote: null,
+  pendingHandoff: null,
 };
+
+function showHandoffCard() {
+  if (!STATE.pendingHandoff) return;
+  const { handoffData, hotelWhatsapp, hotelEmail } = STATE.pendingHandoff;
+  STATE.pendingHandoff = null;
+  STATE.handoffStage = 'done';
+  const { bubble } = addRow('bot', 'Acá están los datos de tu consulta. Recordá que la disponibilidad se confirma con nuestro equipo:');
+  bubble.innerHTML += buildContactButtons(handoffData, hotelWhatsapp, hotelEmail);
+  addSys('— reserva lista para confirmar —');
+}
 
 const messagesEl = document.getElementById('messages');
 const inputEl    = document.getElementById('chatInput');
@@ -631,12 +642,53 @@ async function processInput(text) {
 
   try {
     const result = await callAPI(newHistory, STATE.lastQuote);
-    const { reply, handoffData, hotelWhatsapp, hotelEmail } = result;
+    const { reply, handoffData, quoteText, hotelWhatsapp, hotelEmail } = result;
     hideTyping();
 
-    if (reply === 'HANDOFF_READY' && handoffData) {
+    if (reply === 'QUOTE_BEFORE_HANDOFF' && handoffData) {
+      STATE.history = newHistory;
+      STATE.pendingHandoff = { handoffData, hotelWhatsapp, hotelEmail };
+
+      // Mostrar cotización completa
+      if (quoteText) {
+        addRow('bot', escHtml(quoteText).replace(/\n/g, '<br>'));
+      }
+
+      // Preguntar si quiere confirmar
+      const { bubble } = addRow('bot', '¿Querés confirmar la reserva?');
+      const btnWrap = document.createElement('div');
+      btnWrap.className = 'qr-wrap';
+      btnWrap.style.marginTop = '8px';
+
+      const btnSi = document.createElement('button');
+      btnSi.className = 'qr-btn';
+      btnSi.style.borderColor = 'var(--green)';
+      btnSi.style.color = 'var(--green)';
+      btnSi.textContent = 'Sí, confirmar';
+      btnSi.onclick = () => {
+        btnWrap.remove();
+        showHandoffCard();
+      };
+
+      const btnNo = document.createElement('button');
+      btnNo.className = 'qr-btn';
+      btnNo.textContent = 'No, solo consultaba';
+      btnNo.onclick = () => {
+        btnWrap.remove();
+        addRow('bot', '¡Perfecto! Si necesitás algo más, estoy acá.');
+        addQuickReplies(['Consultar otras fechas', 'Ver habitaciones']);
+        STATE.pendingHandoff = null;
+      };
+
+      btnWrap.appendChild(btnSi);
+      btnWrap.appendChild(btnNo);
+      bubble.appendChild(btnWrap);
+      scrollBottom();
+
+    } else if (reply === 'HANDOFF_READY' && handoffData) {
       STATE.handoffStage = 'done';
       STATE.history = newHistory;
+      if (quoteText) addRow('bot', escHtml(quoteText).replace(/\n/g, '<br>'));
       const { bubble } = addRow('bot', 'Acá están los datos de tu consulta. Recordá que la disponibilidad se confirma con nuestro equipo:');
       bubble.innerHTML += buildContactButtons(handoffData, hotelWhatsapp, hotelEmail);
       addSys('— reserva lista para confirmar —');
@@ -655,6 +707,7 @@ async function processInput(text) {
             checkout:   checkoutM[1].trim(),
             habitacion: tipoM[1].trim(),
             precio:     precioM ? precioM[1].trim() : '',
+            shown:      true,
           };
         }
       }
