@@ -148,23 +148,6 @@ function buildSystemPrompt(settings, rooms, prices) {
   const langNote  = languages.includes("en") ? " Si el cliente escribe en inglés, respondé en inglés." : "";
   const langNoteP = languages.includes("pt") ? " Si el cliente escribe en portugués, respondé en portugués." : "";
 
-  // Calcular ejemplo de cotización para que la IA entienda el formato
-  // (la IA va a replicar esta lógica con los valores reales)
-  const r100  = (n) => Math.round(n / 100) * 100;
-  const r1000 = (n) => Math.round(n / 1000) * 1000;
-  const descPorc = Math.round(discount * 100);
-
-  function calcQuote(total) {
-    const conDesc   = r100(total * (1 - discount));
-    const saldo     = r1000(conDesc * (1 - 0.333));
-    const senia     = conDesc - saldo;
-    const saldoSD   = total - senia;
-    return { total, conDesc, senia, saldo, saldoSD, descPorc };
-  }
-
-  // Ejemplo con $100.000 para que la IA entienda la lógica
-  const ej = calcQuote(100000);
-
   const priceLines = Object.entries(prices)
     .slice(0, 60)
     .map(([d, p]) => `${d}: doble=${fmt(p.doble)||"N/D"}, triple=${fmt(p.triple)||"N/D"}, cuádruple=${fmt(p.cuadruple)||"N/D"}`)
@@ -229,14 +212,15 @@ export default async function handler(req) {
   try {
     const body = await req.json();
     const { messages, lastQuote, action } = body;
-    const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
-    if (!ANTHROPIC_API_KEY) return new Response(JSON.stringify({ error: "API key no configurada" }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });
+    
+    // --- CAMBIO A GEMINI ---
+    const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+    if (!GEMINI_API_KEY) return new Response(JSON.stringify({ error: "API key de Gemini no configurada" }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });
 
     const { settings, rooms, prices } = await getStaticData();
     const hotelWhatsapp = settings["hotel_whatsapp"] || "";
     const hotelEmail    = settings["hotel_email"] || extractEmail(settings["tpl_confirmacion"] || "");
 
-    // Endpoint de configuración pública para el frontend
     if (action === 'config') {
       return new Response(JSON.stringify({
         config: {
@@ -247,7 +231,6 @@ export default async function handler(req) {
       }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    // Verificar si el bot está activo
     if (settings["bot_enabled"] === "false") {
       const offMsg = settings["bot_fallback_msg"] || "El asistente no está disponible en este momento. Por favor contactanos directamente.";
       return new Response(JSON.stringify({ reply: offMsg, hotelWhatsapp, hotelEmail }), {
@@ -255,22 +238,41 @@ export default async function handler(req) {
       });
     }
 
-    const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
+    const systemInstruction = buildSystemPrompt(settings, rooms, prices);
+
+    // Transformar el historial de mensajes al formato que entiende Gemini
+    const geminiMessages = messages.map(msg => ({
+      role: msg.role === "assistant" ? "model" : "user",
+      parts: [{ text: msg.content }]
+    }));
+
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+    
+    const geminiRes = await fetch(geminiUrl, {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-api-key": ANTHROPIC_API_KEY, "anthropic-version": "2023-06-01" },
-      body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 600, system: buildSystemPrompt(settings, rooms, prices), messages }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemInstruction }] },
+        contents: geminiMessages,
+        generationConfig: { maxOutputTokens: 600 }
+      }),
     });
 
-    const data = await anthropicRes.json();
-    const reply = data.content?.[0]?.text || "Lo siento, no pude procesar tu consulta.";
+    const data = await geminiRes.json();
+    
+    if (!geminiRes.ok) {
+        console.error("Error de Gemini:", data);
+        throw new Error("Fallo en la comunicación con la API de IA");
+    }
 
-    // Detectar QUOTE_REQUEST — calcular en el servidor con precisión exacta
+    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Lo siento, no pude procesar tu consulta.";
+
+    // Todo el bloque de QUOTE_REQUEST sigue exactamente igual
     if (reply.trim().startsWith("QUOTE_REQUEST:")) {
       try {
         const qData = JSON.parse(reply.trim().replace("QUOTE_REQUEST:", ""));
         const discount = settings["discount"] || "0";
 
-        // Armar info adicional desde admin — servicios y horarios ya configurados
         const ci = settings["checkin_time"] || "";
         const co = settings["checkout_time"] || "";
         const horarios = ci && co ? `- Check-in ${ci} / Check-out ${co}.` : "";
@@ -281,7 +283,6 @@ export default async function handler(req) {
 
         const quote = calcQuote(prices, qData.checkin, qData.checkout, qData.tipo, discount, extraInfo);
         if (quote && !quote.error) {
-          // Siempre agregar pregunta de confirmación al final de la cotización
           const quoteWithConfirm = quote.text + "\n\n¿Querés confirmar la reserva?";
           return new Response(JSON.stringify({ reply: quoteWithConfirm, quoteData: { checkin: qData.checkin, checkout: qData.checkout, tipo: qData.tipo, precio: quote.totalSinDesc }, hotelWhatsapp: settings["hotel_whatsapp"] || "", hotelEmail: settings["hotel_email"] || extractEmail(settings["tpl_confirmacion"] || "") }), {
             status: 200, headers: { ...cors, "Content-Type": "application/json" },
@@ -292,10 +293,9 @@ export default async function handler(req) {
             status: 200, headers: { ...cors, "Content-Type": "application/json" },
           });
         }
-      } catch(e) { /* si falla el parse, continúa con la respuesta normal */ }
+      } catch(e) { }
     }
 
-    // Registrar preguntas sin respuesta
     if (reply.trim() === "UNANSWERED" || reply.trim() === "OUT_OF_SCOPE") {
       const lastUser = [...messages].reverse().find(m => m.role === "user");
       if (lastUser) {
@@ -311,7 +311,6 @@ export default async function handler(req) {
       }
     }
 
-    // Detectar HANDOFF — aunque Claude ponga texto antes del JSON
     let finalReply = reply;
 
     const handoffMatch = reply.match(/HANDOFF_JSON:(\{.+\})/s);
@@ -328,7 +327,6 @@ export default async function handler(req) {
           cama:       raw.cama       || "",
         };
 
-        // Siempre calcular cotización completa — con o sin precio previo
         const discount = settings["discount"] || "0";
         const tipo = handoffData.habitacion.toLowerCase().includes("triple") ? "triple"
                    : handoffData.habitacion.toLowerCase().includes("cuádruple") || handoffData.habitacion.toLowerCase().includes("cuadruple") ? "cuadruple"
@@ -361,7 +359,7 @@ export default async function handler(req) {
         return new Response(JSON.stringify({ reply: "QUOTE_BEFORE_HANDOFF", handoffData, quoteText, hotelWhatsapp, hotelEmail }), {
           status: 200, headers: { ...cors, "Content-Type": "application/json" },
         });
-      } catch(e) { /* continúa */ }
+      } catch(e) { }
     }
 
     if (reply.trim() === "OUT_OF_SCOPE" || reply.trim() === "UNANSWERED") {
