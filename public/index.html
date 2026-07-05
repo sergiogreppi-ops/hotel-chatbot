@@ -2,419 +2,376 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Hotel · Consultas y Reservas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --gold: #b8985a;
-    --gold-l: #d4b87a;
-    --dark: #1a1710;
-    --dark2: #2c2a24;
-    --cream: #faf7f2;
-    --gray: #6b6760;
-    --border: #e8e2d8;
-    --white: #ffffff;
-    --green: #22c55e;
-    --green-bg: #f0fdf4;
-    --green-border: #bbf7d0;
-    --green-text: #166534;
+    --bg:        #f3f1fb;
+    --surface:   #ffffff;
+    --ink:       #1c1830;
+    --muted:     #6f6a84;
+    --faint:     #a29db6;
+    --line:      #ece8f6;
+    --line-soft: #f4f1fb;
+
+    --brand-1:   #7b5cff;
+    --brand-2:   #c65cff;
+    --brand-3:   #ff6fa0;
+    --accent:    #7b5cff;
+    --accent-2:  #b45cff;
+    --accent-soft:#efeaff;
+    --grad:      linear-gradient(135deg, #7b5cff 0%, #c65cff 48%, #ff6fa0 100%);
+    --grad-btn:  linear-gradient(135deg, #7b5cff 0%, #b45cff 55%, #ff6fa0 120%);
+
+    --online:      #12b981;
+    --online-soft: rgba(18,185,129,.16);
+    --offline:     #f59e0b;
+    --offline-soft:rgba(245,158,11,.18);
+    --wa:          #25d366;
+    --wa-dark:     #1da851;
+
+    --gold:  var(--accent);
+    --green: var(--online);
+
+    --shadow:   0 24px 60px -18px rgba(70, 40, 130, .34), 0 8px 24px -12px rgba(70, 40, 130, .22);
+    --radius:   26px;
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   html, body {
-    height: 100%;
-    font-family: 'DM Sans', sans-serif;
-    background: var(--cream);
-    background-image:
-      radial-gradient(ellipse at 15% 60%, rgba(184,152,90,.07) 0%, transparent 55%),
-      radial-gradient(ellipse at 85% 15%, rgba(184,152,90,.04) 0%, transparent 50%);
+    min-height: 100%;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    -webkit-font-smoothing: antialiased;
   }
 
-  /* ── PAGE LAYOUT ─────────────────────────────── */
+  /* ── AURORA DE FONDO ──────────────────────────────────── */
+  .aurora { position: fixed; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
+  .aurora span {
+    position: absolute; border-radius: 50%;
+    filter: blur(70px); opacity: .55; mix-blend-mode: multiply;
+  }
+  .aurora .b1 { width: 46vmax; height: 46vmax; left: -12vmax; top: -14vmax;
+    background: radial-gradient(circle, var(--brand-1), transparent 70%); animation: drift1 26s ease-in-out infinite; }
+  .aurora .b2 { width: 40vmax; height: 40vmax; right: -12vmax; top: 8vmax;
+    background: radial-gradient(circle, var(--brand-3), transparent 70%); animation: drift2 30s ease-in-out infinite; }
+  .aurora .b3 { width: 44vmax; height: 44vmax; left: 18vmax; bottom: -20vmax;
+    background: radial-gradient(circle, var(--brand-2), transparent 70%); animation: drift3 34s ease-in-out infinite; opacity: .40; }
+  @keyframes drift1 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(6vmax,4vmax) scale(1.12)} }
+  @keyframes drift2 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(-5vmax,6vmax) scale(1.1)} }
+  @keyframes drift3 { 0%,100%{transform:translate(0,0) scale(1)} 50%{transform:translate(4vmax,-5vmax) scale(1.08)} }
+
+  /* ── LAYOUT ───────────────────────────────────────────── */
   .page {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 24px 16px;
-    gap: 20px;
+    position: relative; z-index: 1;
+    min-height: 100vh; min-height: 100dvh;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 28px 18px; gap: 18px;
   }
 
-  .page-header {
-    text-align: center;
+  .hero { text-align: center; max-width: 460px; animation: rise .6s cubic-bezier(.2,.7,.2,1) both; }
+  .hero-title {
+    font-family: 'Fraunces', serif;
+    font-size: clamp(28px, 5.4vw, 44px);
+    font-weight: 500; line-height: 1.05; letter-spacing: -.01em;
+    background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent;
   }
-  .page-header h1 {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: clamp(26px, 5vw, 40px);
-    font-weight: 300;
-    color: var(--dark);
-    letter-spacing: .04em;
-  }
-  .page-header p {
-    margin-top: 6px;
-    font-size: 13.5px;
-    color: var(--gray);
-    font-weight: 300;
-  }
-  .gold-line {
-    width: 48px; height: 1px;
-    background: linear-gradient(90deg, transparent, var(--gold), transparent);
-    margin: 12px auto 0;
-  }
+  .hero-sub { margin-top: 9px; font-size: 14px; color: var(--muted); font-weight: 500; }
 
-  /* ── CHAT CARD ───────────────────────────────── */
+  /* ── TARJETA DE CHAT ──────────────────────────────────── */
   .chat-card {
-    width: 100%;
-    max-width: 460px;
-    background: var(--white);
-    border-radius: 20px;
-    border: 1px solid var(--border);
-    box-shadow: 0 12px 48px rgba(0,0,0,.10), 0 2px 0 rgba(184,152,90,.25);
-    display: flex;
-    flex-direction: column;
-    height: clamp(500px, 70vh, 640px);
-    overflow: hidden;
-  }
-
-  /* header */
-  .chat-header {
-    background: var(--dark);
-    padding: 16px 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-shrink: 0;
     position: relative;
+    width: 100%; max-width: 468px;
+    height: min(724px, 84dvh);
+    background: rgba(255,255,255,.82);
+    backdrop-filter: blur(22px) saturate(1.4);
+    -webkit-backdrop-filter: blur(22px) saturate(1.4);
+    border: 1px solid rgba(255,255,255,.7);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column; overflow: hidden;
+    animation: rise .7s cubic-bezier(.2,.7,.2,1) both;
   }
-  .chat-header::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 20px; right: 20px;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(184,152,90,.5), transparent);
+  @keyframes rise { from{opacity:0; transform:translateY(16px) scale(.985)} to{opacity:1; transform:none} }
+
+  /* Header */
+  .chat-header {
+    position: relative; flex-shrink: 0;
+    padding: 16px 18px;
+    background: var(--grad);
+    display: flex; align-items: center; gap: 13px; overflow: hidden;
   }
-  .h-avatar {
-    width: 38px; height: 38px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--gold), var(--gold-l));
+  .chat-header::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(120% 140% at 12% -20%, rgba(255,255,255,.36), transparent 55%);
+    pointer-events: none;
+  }
+  .brand-avatar {
+    position: relative;
+    width: 46px; height: 46px; border-radius: 15px; flex-shrink: 0;
+    background: rgba(255,255,255,.92);
     display: flex; align-items: center; justify-content: center;
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 18px; color: var(--dark); font-weight: 600; flex-shrink: 0;
+    font-family: 'Fraunces', serif; font-weight: 600; font-size: 22px;
+    color: var(--accent-2);
+    box-shadow: 0 6px 16px rgba(40,10,80,.22), inset 0 0 0 1px rgba(255,255,255,.6);
   }
-  .h-info { flex: 1; }
-  .h-name {
-    font-family: 'Cormorant Garamond', serif;
-    font-size: 16px; color: #fff; font-weight: 400; letter-spacing: .03em;
+  .brand-avatar::after {
+    content: ''; position: absolute; right: -2px; bottom: -2px;
+    width: 14px; height: 14px; border-radius: 50%;
+    background: var(--online); border: 2.5px solid #fff;
+    box-shadow: 0 0 0 2px var(--online-soft); transition: background .3s;
   }
-  .h-status {
-    display: flex; align-items: center; gap: 5px; margin-top: 2px;
+  body.is-offline .brand-avatar::after { background: var(--offline); box-shadow: 0 0 0 2px var(--offline-soft); }
+
+  .h-info { flex: 1; min-width: 0; position: relative; }
+  .brand-name {
+    font-size: 15.5px; font-weight: 700; color: #fff; letter-spacing: -.01em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .h-dot {
-    width: 6px; height: 6px; border-radius: 50%; background: var(--green);
-    animation: pulse 2s infinite;
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 6px; margin-top: 4px;
+    padding: 3px 10px 3px 8px; border-radius: 20px;
+    background: rgba(255,255,255,.2);
+    border: 1px solid rgba(255,255,255,.28);
+    backdrop-filter: blur(4px);
   }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
-  .h-sub { font-size: 11px; color: rgba(255,255,255,.45); letter-spacing: .04em; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: #7cf3c4; position: relative; }
+  .status-pill[data-state="online"] .status-dot { background: #74f0bf; }
+  .status-pill[data-state="online"] .status-dot::after {
+    content: ''; position: absolute; inset: -4px; border-radius: 50%;
+    border: 2px solid rgba(116,240,191,.7); animation: ring 1.8s ease-out infinite;
+  }
+  @keyframes ring { 0%{transform:scale(.6);opacity:.9} 100%{transform:scale(1.9);opacity:0} }
+  .status-pill[data-state="offline"] .status-dot { background: #ffd27a; }
+  .status-text { font-size: 11.5px; font-weight: 600; color: #fff; letter-spacing: .01em; }
+
   .h-badge {
-    font-size: 10px; color: var(--gold);
-    border: 1px solid rgba(184,152,90,.35);
-    padding: 2px 8px; border-radius: 20px; letter-spacing: .07em;
+    position: relative; flex-shrink: 0;
+    font-size: 9.5px; font-weight: 700; color: #fff; letter-spacing: .09em;
+    padding: 4px 9px; border-radius: 20px;
+    background: rgba(255,255,255,.16);
+    border: 1px solid rgba(255,255,255,.28);
   }
 
-  /* messages */
+  /* Franja de estado offline */
+  .status-banner {
+    flex-shrink: 0;
+    display: none; align-items: center; gap: 9px;
+    padding: 10px 18px;
+    font-size: 12.5px; font-weight: 500; color: #92600a;
+    background: linear-gradient(180deg, #fff7e8, #fffdf7);
+    border-bottom: 1px solid #fbe6bf;
+  }
+  body.is-offline .status-banner { display: flex; }
+  .status-banner svg { flex-shrink: 0; }
+
+  /* Mensajes */
   .messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
+    flex: 1; overflow-y: auto; overscroll-behavior: contain;
+    padding: 18px 15px 8px;
+    display: flex; flex-direction: column; gap: 12px;
     scroll-behavior: smooth;
   }
-  .messages::-webkit-scrollbar { width: 3px; }
-  .messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .messages::-webkit-scrollbar { width: 5px; }
+  .messages::-webkit-scrollbar-thumb { background: #ddd6ec; border-radius: 3px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
 
-  .msg-row {
-    display: flex;
-    gap: 8px;
-    animation: fadeUp .25s ease;
-  }
+  .msg-row { display: flex; gap: 9px; align-items: flex-end; animation: pop .3s cubic-bezier(.2,.8,.2,1); }
   .msg-row.user { flex-direction: row-reverse; }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes pop { from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:none} }
 
   .m-av {
-    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    width: 30px; height: 30px; border-radius: 10px; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
-    font-size: 11px; font-weight: 500; align-self: flex-end;
+    font-size: 13px; font-weight: 600; align-self: flex-end;
   }
-  .m-av.bot { background: #f0ede8; color: var(--gray); border: 1px solid var(--border); font-family: 'Cormorant Garamond', serif; font-size: 13px; }
-  .m-av.user { background: var(--dark2); color: rgba(255,255,255,.7); }
+  .m-av.bot { background: var(--accent-soft); color: var(--accent-2); font-family: 'Fraunces', serif; }
+  .m-av.user { background: var(--grad-btn); color: #fff; font-size: 12px; }
 
   .bubble {
-    max-width: 78%;
-    padding: 9px 13px;
-    border-radius: 16px;
-    font-size: 13.5px;
-    line-height: 1.55;
+    max-width: 80%; padding: 11px 15px;
+    font-size: 14px; line-height: 1.55; letter-spacing: -.005em;
+    border-radius: 20px; word-wrap: break-word; overflow-wrap: anywhere;
   }
   .bubble.bot {
-    background: #f9f8f5;
-    color: var(--dark);
-    border: 1px solid var(--border);
-    border-bottom-left-radius: 3px;
+    background: #fff; color: var(--ink);
+    border: 1px solid var(--line);
+    border-bottom-left-radius: 7px;
+    box-shadow: 0 4px 14px -8px rgba(70,40,130,.18);
   }
   .bubble.user {
-    background: var(--dark2);
-    color: #fff;
-    border-bottom-right-radius: 3px;
+    background: var(--grad-btn); color: #fff;
+    border-bottom-right-radius: 7px;
+    box-shadow: 0 8px 20px -8px rgba(123,92,255,.6);
   }
-  .bubble.success {
-    background: var(--green-bg);
-    border-color: var(--green-border);
-    color: var(--green-text);
-  }
+  .bubble.success { background: #f0fdf7; border: 1px solid #bff0d8; color: #0b7a4e; }
+  .bubble a { color: inherit; font-weight: 600; }
+  .bubble.bot a { color: var(--accent); }
 
-  /* typing */
+  /* Typing */
   .typing-bubble {
-    padding: 10px 14px;
-    background: #f9f8f5;
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    border-bottom-left-radius: 3px;
-    display: flex; gap: 4px; align-items: center;
-    width: fit-content;
+    padding: 13px 16px; background: #fff; border: 1px solid var(--line);
+    border-radius: 20px; border-bottom-left-radius: 7px;
+    display: flex; gap: 5px; align-items: center; width: fit-content;
+    box-shadow: 0 4px 14px -8px rgba(70,40,130,.18);
   }
-  .t-dot {
-    width: 6px; height: 6px; border-radius: 50%; background: var(--gold);
-    animation: tdot 1.2s ease infinite;
-  }
-  .t-dot:nth-child(2){animation-delay:.2s}
-  .t-dot:nth-child(3){animation-delay:.4s}
-  @keyframes tdot{0%,60%,100%{transform:translateY(0);opacity:.35}30%{transform:translateY(-4px);opacity:1}}
+  .t-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent-2); animation: tdot 1.3s ease infinite; }
+  .t-dot:nth-child(2){ animation-delay:.18s } .t-dot:nth-child(3){ animation-delay:.36s }
+  @keyframes tdot { 0%,60%,100%{transform:translateY(0);opacity:.3} 30%{transform:translateY(-5px);opacity:1} }
 
-  /* quick replies */
-  .qr-wrap { padding-left: 34px; margin-top: 6px; display: flex; flex-wrap: wrap; gap: 5px; }
+  /* Quick replies */
+  .qr-wrap { padding-left: 39px; margin-top: -2px; display: flex; flex-wrap: wrap; gap: 7px; animation: pop .35s ease; }
   .qr-btn {
-    background: transparent;
-    border: 1px solid var(--gold);
-    color: var(--gold);
-    padding: 4px 12px; border-radius: 20px;
-    font-size: 12px; cursor: pointer;
-    font-family: 'DM Sans', sans-serif;
-    transition: all .15s;
+    background: rgba(255,255,255,.7); border: 1.5px solid var(--accent-soft);
+    color: var(--accent-2); padding: 7px 14px; border-radius: 20px;
+    font-size: 12.5px; font-weight: 600; cursor: pointer;
+    font-family: inherit; transition: transform .15s, background .2s, border-color .2s, color .2s;
   }
-  .qr-btn:hover { background: var(--gold); color: #fff; }
+  .qr-btn:hover { background: var(--grad-btn); color: #fff; border-color: transparent; transform: translateY(-1px); }
+  .qr-btn:active { transform: translateY(0); }
 
-  /* contact card */
+  /* Contact card */
   .contact-card {
-    margin-top: 10px;
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    overflow: hidden;
+    margin-top: 11px; background: #fff;
+    border: 1px solid var(--line); border-radius: 16px; overflow: hidden;
+    box-shadow: 0 10px 30px -14px rgba(70,40,130,.3);
   }
   .contact-summary {
-    padding: 12px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    background: var(--cream);
-    border-bottom: 1px solid var(--border);
+    padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;
+    background: linear-gradient(180deg, #faf8ff, #fff);
+    border-bottom: 1px solid var(--line);
   }
-  .cs-row {
-    display: flex;
-    gap: 8px;
-    font-size: 12.5px;
-    color: var(--dark);
-  }
-  .cs-row span:first-child { flex-shrink: 0; }
+  .cs-row { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--ink); font-weight: 500; }
+  .cs-row span:first-child { flex-shrink: 0; font-size: 15px; }
   .contact-divider {
-    padding: 9px 14px;
-    font-size: 11px;
-    color: var(--gray);
-    letter-spacing: .04em;
-    text-align: center;
-    border-bottom: 1px solid var(--border);
+    padding: 11px 16px; font-size: 11.5px; font-weight: 600; color: var(--muted);
+    text-align: center; border-bottom: 1px solid var(--line);
   }
-  .contact-btns {
-    padding: 12px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
+  .contact-btns { padding: 14px 16px; display: flex; flex-direction: column; gap: 9px; }
   .contact-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 10px 14px;
-    border-radius: 8px;
-    font-size: 13px;
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 500;
-    text-decoration: none;
-    transition: all .15s;
-    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 9px;
+    padding: 12px 16px; border-radius: 13px;
+    font-size: 13.5px; font-family: inherit; font-weight: 600;
+    text-decoration: none; cursor: pointer; transition: transform .15s, filter .2s, background .2s;
   }
-  .wa-btn {
-    background: #25d366;
-    color: #fff;
-  }
-  .wa-btn:hover { background: #1da851; }
-  .mail-btn {
-    background: transparent;
-    color: var(--dark);
-    border: 1px solid var(--border);
-  }
-  .mail-btn:hover { background: var(--cream); }
-  .contact-note {
-    padding: 0 14px 10px;
-    font-size: 10.5px;
-    color: #bbb;
-    text-align: center;
-  }
+  .contact-btn:active { transform: scale(.98); }
+  .wa-btn { background: var(--wa); color: #fff; box-shadow: 0 8px 20px -8px rgba(37,211,102,.7); }
+  .wa-btn:hover { background: var(--wa-dark); }
+  .mail-btn { background: #fff; color: var(--ink); border: 1.5px solid var(--line); }
+  .mail-btn:hover { background: var(--line-soft); }
+  .contact-note { padding: 0 16px 13px; font-size: 11px; color: var(--faint); text-align: center; line-height: 1.5; }
 
-  /* handoff form (se mantiene por compatibilidad) */
-  .hf-form {
-    margin-top: 10px;
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px;
-    display: flex;
-    flex-direction: column;
-    gap: 9px;
-  }
-  .hf-label { font-size: 10.5px; color: var(--gray); letter-spacing: .05em; margin-bottom: 3px; }
-  .hf-input {
-    width: 100%;
-    border: 1px solid var(--border);
-    border-radius: 7px;
-    padding: 7px 10px;
-    font-size: 13px;
-    font-family: 'DM Sans', sans-serif;
-    color: var(--dark);
-    background: var(--cream);
-    outline: none;
-    transition: border-color .2s;
-  }
-  .hf-input:focus { border-color: var(--gold); }
-  .hf-submit {
-    background: var(--dark);
-    color: #fff;
-    border: none;
-    border-radius: 8px;
-    padding: 9px;
-    font-size: 13px;
-    font-family: 'DM Sans', sans-serif;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background .2s;
-    margin-top: 2px;
-  }
-  .hf-submit:hover { background: var(--gold); }
-  .hf-submit:disabled { background: #ccc; cursor: not-allowed; }
+  /* Handoff form legacy */
+  .hf-form { margin-top: 11px; background:#fff; border:1px solid var(--line); border-radius:16px; padding:14px; display:flex; flex-direction:column; gap:10px; }
+  .hf-label { font-size:11px; color:var(--muted); font-weight:600; margin-bottom:3px; }
+  .hf-input { width:100%; border:1.5px solid var(--line); border-radius:11px; padding:10px 12px; font-size:13.5px; font-family:inherit; color:var(--ink); background:var(--line-soft); outline:none; transition:border-color .2s; }
+  .hf-input:focus { border-color: var(--accent); }
+  .hf-submit { background:var(--grad-btn); color:#fff; border:none; border-radius:12px; padding:11px; font-size:13.5px; font-weight:600; font-family:inherit; cursor:pointer; }
+  .hf-submit:disabled { opacity:.5; cursor:not-allowed; }
 
-  /* system divider */
-  .sys-msg {
-    text-align: center;
-    font-size: 11px;
-    color: #ccc;
-    padding: 2px 0;
-    letter-spacing: .03em;
-  }
+  /* System divider */
+  .sys-msg { text-align: center; font-size: 11px; color: var(--faint); font-weight: 500; padding: 3px 0; }
 
-  /* input area */
+  /* Input */
   .input-area {
-    padding: 10px 12px 13px;
-    border-top: 1px solid var(--border);
-    background: #fff;
-    flex-shrink: 0;
+    flex-shrink: 0; padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--line);
+    background: rgba(255,255,255,.7);
+    backdrop-filter: blur(10px);
   }
-  .input-row { display: flex; gap: 8px; align-items: flex-end; }
+  .input-row {
+    display: flex; gap: 9px; align-items: flex-end;
+    background: #fff; border: 1.5px solid var(--line);
+    border-radius: 22px; padding: 5px 5px 5px 6px;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .input-row:focus-within { border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-soft); }
   .chat-input {
-    flex: 1;
-    border: 1px solid var(--border);
-    border-radius: 20px;
-    padding: 9px 15px;
-    font-size: 13.5px;
-    font-family: 'DM Sans', sans-serif;
-    color: var(--dark);
-    background: var(--cream);
-    outline: none;
-    resize: none;
-    line-height: 1.4;
-    max-height: 90px;
-    transition: border-color .2s;
+    flex: 1; border: none; background: transparent; outline: none; resize: none;
+    padding: 8px 6px; font-size: 14px; font-family: inherit; color: var(--ink);
+    line-height: 1.4; max-height: 96px;
   }
-  .chat-input:focus { border-color: var(--gold); }
-  .chat-input::placeholder { color: #c5c0b8; }
+  .chat-input::placeholder { color: var(--faint); }
   .send-btn {
-    width: 36px; height: 36px;
-    border-radius: 50%; border: none;
-    background: var(--dark); cursor: pointer;
+    width: 40px; height: 40px; border-radius: 50%; border: none; flex-shrink: 0;
+    background: var(--grad-btn); cursor: pointer;
     display: flex; align-items: center; justify-content: center;
-    flex-shrink: 0; transition: background .2s;
+    box-shadow: 0 8px 18px -6px rgba(123,92,255,.7);
+    transition: transform .18s, filter .2s;
   }
-  .send-btn:hover { background: var(--gold); }
-  .send-btn:disabled { background: #ccc; cursor: not-allowed; }
-  .input-hint {
-    text-align: center; font-size: 10.5px;
-    color: #ccc; margin-top: 7px; letter-spacing: .02em;
+  .send-btn svg { transition: transform .18s; }
+  .send-btn:hover { transform: translateY(-1px) scale(1.04); }
+  .send-btn:hover svg { transform: translate(1px,-1px); }
+  .send-btn:active { transform: scale(.95); }
+  .send-btn:disabled { background: #d7d2e6; box-shadow: none; cursor: not-allowed; }
+  .input-hint { text-align: center; font-size: 10.5px; color: var(--faint); margin-top: 9px; letter-spacing: .01em; }
+  .input-hint b { color: var(--accent-2); font-weight: 700; }
+
+  /* Loading */
+  .loading-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; }
+  .spinner { width: 30px; height: 30px; border-radius: 50%; border: 3px solid var(--accent-soft); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-size: 13px; color: var(--muted); font-weight: 500; }
+
+  /* Footer */
+  .page-footer { font-size: 11.5px; color: var(--faint); font-weight: 500; text-align: center; animation: rise .8s ease both; }
+
+  /* ── RESPONSIVE ───────────────────────────────────────── */
+  @media (max-width: 640px) {
+    .page { padding: 0; gap: 0; justify-content: stretch; }
+    .hero, .page-footer { display: none; }
+    .chat-card {
+      max-width: 100%; width: 100%;
+      height: 100vh; height: 100dvh;
+      border-radius: 0; border: none; backdrop-filter: none; background: #fff;
+      box-shadow: none;
+    }
+  }
+  @media (max-height: 560px) and (min-width: 641px) {
+    .hero, .page-footer { display: none; }
+    .chat-card { height: 94dvh; }
   }
 
-  /* loading state */
-  .loading-state {
-    flex: 1; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; gap: 12px;
-  }
-  .spinner {
-    width: 28px; height: 28px; border-radius: 50%;
-    border: 2px solid var(--border);
-    border-top-color: var(--gold);
-    animation: spin .8s linear infinite;
-  }
-  @keyframes spin { to{transform:rotate(360deg)} }
-  .loading-text { font-size: 12.5px; color: var(--gray); }
-
-  /* ── PAGE FOOTER ─────────────────────────────── */
-  .page-footer {
-    font-size: 11px;
-    color: #c0bab3;
-    letter-spacing: .03em;
-  }
-
-  @media (max-width: 480px) {
-    .page { padding: 16px 10px; justify-content: flex-start; padding-top: 30px; }
-    .chat-card { height: calc(100vh - 120px); border-radius: 16px; }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; }
+    .messages { scroll-behavior: auto; }
   }
 </style>
 </head>
 <body>
 
+<div class="aurora" aria-hidden="true"><span class="b1"></span><span class="b2"></span><span class="b3"></span></div>
+
 <main class="page">
 
-  <div class="page-header">
-    <h1>Hotel · Consultas</h1>
-    <div class="gold-line"></div>
-    <p>Consultá precios, habitaciones y hacé tu reserva</p>
+  <div class="hero">
+    <h1 class="hero-title">Consultas y reservas</h1>
+    <p class="hero-sub">Precios, habitaciones y disponibilidad — al instante</p>
   </div>
 
-  <div class="chat-card">
+  <section class="chat-card">
 
-    <div class="chat-header">
-      <div class="h-avatar">H</div>
+    <header class="chat-header">
+      <div class="brand-avatar">H</div>
       <div class="h-info">
-        <div class="h-name">Asistente del Hotel</div>
-        <div class="h-status">
-          <div class="h-dot"></div>
-          <span class="h-sub">EN LÍNEA</span>
+        <div class="brand-name">Asistente del hotel</div>
+        <div class="status-pill" id="botStatus" data-state="online">
+          <span class="status-dot"></span>
+          <span class="status-text">Atendiendo consultas</span>
         </div>
       </div>
-      <div class="h-badge">BETA</div>
+      <div class="h-badge">IA</div>
+    </header>
+
+    <div class="status-banner">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      <span>El asistente no está atendiendo en este momento. Dejá tu consulta y te respondemos apenas volvamos.</span>
     </div>
 
     <div class="messages" id="messages">
@@ -426,26 +383,20 @@
 
     <div class="input-area">
       <div class="input-row">
-        <textarea
-          class="chat-input"
-          id="chatInput"
-          placeholder="Escribí tu consulta…"
-          rows="1"
-          disabled
-        ></textarea>
-        <button class="send-btn" id="sendBtn" disabled>
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <textarea class="chat-input" id="chatInput" placeholder="Escribí tu consulta…" rows="1" disabled></textarea>
+        <button class="send-btn" id="sendBtn" disabled aria-label="Enviar">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="22" y1="2" x2="11" y2="13"/>
             <polygon points="22 2 15 22 11 13 2 9 22 2"/>
           </svg>
         </button>
       </div>
-      <div class="input-hint">Solo consultas sobre habitaciones y precios · Powered by Claude</div>
+      <div class="input-hint">Consultas sobre habitaciones y precios · con <b>IA</b></div>
     </div>
 
-  </div>
+  </section>
 
-  <div class="page-footer">© Hotel · Sistema de consultas</div>
+  <div class="page-footer">© <span class="page-footer-name">Hotel</span> · Sistema de consultas</div>
 
 </main>
 
@@ -457,6 +408,8 @@ const STATE = {
   handoffStage: null,
   lastQuote: null,
   pendingHandoff: null,
+  online: true,
+  mono: 'H',
 };
 
 function showHandoffCard() {
@@ -484,7 +437,7 @@ function addRow(role, html, extra = {}) {
 
   const av = document.createElement('div');
   av.className = `m-av ${role}`;
-  av.textContent = role === 'bot' ? 'H' : '✦';
+  av.textContent = role === 'bot' ? (STATE.mono || 'H') : '✦';
 
   const bubble = document.createElement('div');
   bubble.className = `bubble ${role}${extra.success ? ' success' : ''}`;
@@ -511,7 +464,7 @@ function showTyping() {
   row.id = 'typingRow';
   const av = document.createElement('div');
   av.className = 'm-av bot';
-  av.textContent = 'H';
+  av.textContent = STATE.mono || 'H';
   const b = document.createElement('div');
   b.className = 'typing-bubble';
   b.innerHTML = '<div class="t-dot"></div><div class="t-dot"></div><div class="t-dot"></div>';
@@ -521,9 +474,7 @@ function showTyping() {
   scrollBottom();
 }
 
-function hideTyping() {
-  document.getElementById('typingRow')?.remove();
-}
+function hideTyping() { document.getElementById('typingRow')?.remove(); }
 
 function addQuickReplies(replies) {
   const lastRow = messagesEl.querySelector('.msg-row.bot:last-of-type');
@@ -544,6 +495,18 @@ function addQuickReplies(replies) {
 function setInputEnabled(enabled) {
   inputEl.disabled = !enabled;
   sendBtn.disabled = !enabled;
+}
+
+// ── ESTADO DEL BOT (atendiendo / no disponible) ───────
+function setBotStatus(online) {
+  STATE.online = online;
+  const pill = document.getElementById('botStatus');
+  if (pill) {
+    pill.dataset.state = online ? 'online' : 'offline';
+    const txt = pill.querySelector('.status-text');
+    if (txt) txt.textContent = online ? 'Atendiendo consultas' : 'Ahora no disponible';
+  }
+  document.body.classList.toggle('is-offline', !online);
 }
 
 // ── API CALL ──────────────────────────────────────────
@@ -596,8 +559,8 @@ function buildContactButtons(data, whatsapp, email) {
   const mailLink = email ? `mailto:${email}?subject=${encodeURIComponent(mailSubj)}&body=${encodeURIComponent(msgText)}` : null;
 
   const btnWa = waLink ? `
-    <a href="${waLink}" target="_blank" class="contact-btn wa-btn">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.112 1.523 5.837L.057 23.943l6.293-1.45A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.65-.518-5.166-1.42l-.371-.22-3.844.885.923-3.741-.241-.386A9.937 9.937 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+    <a href="${waLink}" target="_blank" rel="noopener" class="contact-btn wa-btn">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.112 1.523 5.837L.057 23.943l6.293-1.45A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.885 0-3.65-.518-5.166-1.42l-.371-.22-3.844.885.923-3.741-.241-.386A9.937 9.937 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
       Confirmar por WhatsApp
     </a>` : '';
 
@@ -634,10 +597,6 @@ async function processInput(text) {
   addRow('user', escHtml(text));
   showTyping();
 
-  // Pasar lastQuote al historial como contexto para el handoff
-  const historyToSend = STATE.lastQuote
-    ? [...STATE.history, { role: 'system_hint', content: JSON.stringify(STATE.lastQuote) }]
-    : STATE.history;
   const newHistory = [...STATE.history, { role: 'user', content: text }];
 
   try {
@@ -649,34 +608,28 @@ async function processInput(text) {
       STATE.history = newHistory;
       STATE.pendingHandoff = { handoffData, hotelWhatsapp, hotelEmail };
 
-      // Mostrar cotización completa
       if (quoteText) {
         addRow('bot', escHtml(quoteText).replace(/\n/g, '<br>'));
       }
 
-      // Preguntar si quiere confirmar
       const { bubble } = addRow('bot', '¿Querés confirmar la reserva?');
       const btnWrap = document.createElement('div');
       btnWrap.className = 'qr-wrap';
       btnWrap.style.marginTop = '8px';
+      btnWrap.style.paddingLeft = '0';
 
       const btnSi = document.createElement('button');
       btnSi.className = 'qr-btn';
-      btnSi.style.borderColor = 'var(--green)';
-      btnSi.style.color = 'var(--green)';
+      btnSi.style.borderColor = 'var(--online)';
+      btnSi.style.color = 'var(--online)';
       btnSi.textContent = 'Sí, confirmar';
-      btnSi.onclick = () => {
-        btnWrap.remove();
-        showHandoffCard();
-      };
+      btnSi.onclick = () => { btnWrap.remove(); showHandoffCard(); };
 
       const btnNo = document.createElement('button');
       btnNo.className = 'qr-btn';
       btnNo.textContent = 'No, solo consultaba';
       btnNo.onclick = () => {
         btnWrap.remove();
-        // Agregar al historial que el cliente NO quiere reservar
-        // así el bot no sigue en modo reserva pero recuerda los datos anteriores
         STATE.history.push({ role: 'assistant', content: '¿Querés confirmar la reserva?' });
         STATE.history.push({ role: 'user', content: 'No, solo quería consultar el precio.' });
         STATE.pendingHandoff = null;
@@ -699,7 +652,6 @@ async function processInput(text) {
     } else {
       STATE.history = [...newHistory, { role: 'assistant', content: reply }];
 
-      // Guardar cotización en STATE si la respuesta tiene ese formato
       if (reply.includes('Check In:') && reply.includes('seña')) {
         const checkinM  = reply.match(/Check In:\s*([^\n\/]+)/);
         const checkoutM = reply.match(/Check Out:\s*([^\n]+)/);
@@ -720,10 +672,12 @@ async function processInput(text) {
       addRow('bot', linkedReply);
 
       const low = text.toLowerCase();
-      if (low.match(/^(hola|buenas|buen|info)/)) {
-        addQuickReplies(['Ver habitaciones', 'Consultar precios', 'Quiero reservar']);
-      } else if (reply.toLowerCase().includes('doble') || reply.toLowerCase().includes('triple') || reply.toLowerCase().includes('precio')) {
-        addQuickReplies(['Quiero reservar', 'Consultar otras fechas']);
+      if (STATE.online) {
+        if (low.match(/^(hola|buenas|buen|info)/)) {
+          addQuickReplies(['Ver habitaciones', 'Consultar precios', 'Quiero reservar']);
+        } else if (reply.toLowerCase().includes('doble') || reply.toLowerCase().includes('triple') || reply.toLowerCase().includes('precio')) {
+          addQuickReplies(['Quiero reservar', 'Consultar otras fechas']);
+        }
       }
     }
   } catch(e) {
@@ -737,68 +691,71 @@ async function processInput(text) {
   inputEl.focus();
 }
 
-// Convierte URLs en links clickeables
-// Convierte URLs en links clickeables — ignora las que ya están en atributos href
+// ── LINKIFY ───────────────────────────────────────────
 function linkifyUrls(html) {
-  // Dividir por tags HTML existentes, linkificar solo el texto entre tags
   return html.replace(/(<[^>]+>)|([^<]+)/g, (match, tag, text) => {
-    if (tag) return tag; // es un tag HTML, dejarlo intacto
+    if (tag) return tag;
     if (!text) return match;
     return text.replace(
       /(https?:\/\/[^\s<"]+)/g,
-      '<a href="$1" target="_blank" rel="noopener" style="color:var(--gold);text-decoration:underline;">$1</a>'
+      '<a href="$1" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;">$1</a>'
     );
   });
 }
 
-// Convierte números de tel/WA y emails en links clickeables
 function linkifyContacts(html, whatsapp, email) {
   if (whatsapp) {
     const waNum = whatsapp.replace(/\D/g, '');
     const waEsc = escHtml(whatsapp);
     html = html.split(waEsc).join(
-      `<a href="https://wa.me/${waNum}" target="_blank" style="color:var(--gold);text-decoration:underline;">${waEsc}</a>`);
+      `<a href="https://wa.me/${waNum}" target="_blank" rel="noopener" style="color:var(--accent);text-decoration:underline;">${waEsc}</a>`);
   }
   if (email) {
     const emailEsc = escHtml(email);
     html = html.split(emailEsc).join(
-      `<a href="mailto:${emailEsc}" style="color:var(--gold);text-decoration:underline;">${emailEsc}</a>`);
+      `<a href="mailto:${emailEsc}" style="color:var(--accent);text-decoration:underline;">${emailEsc}</a>`);
   }
   return html;
 }
 
 function escHtml(str) {
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 }
+
+function setText(sel, value) { const el = document.querySelector(sel); if (el) el.textContent = value; }
 
 // ── INIT ──────────────────────────────────────────────
 async function init() {
   document.getElementById('loadingState').remove();
-  setInputEnabled(true);
-  inputEl.focus();
 
-  // Cargar config pública del hotel
   const cfg = await loadChatConfig();
+  const name = cfg.hotelName || 'nuestro hotel';
+  STATE.mono = (cfg.hotelName || 'H').trim().charAt(0).toUpperCase() || 'H';
 
-  // Nombre del hotel en header y página
   if (cfg.hotelName) {
     document.title = cfg.hotelName + ' · Consultas';
-    const hName = document.querySelector('.h-name');
-    if (hName) hName.textContent = 'Asistente de ' + cfg.hotelName;
-    const h1 = document.querySelector('.page-header h1');
-    if (h1) h1.textContent = cfg.hotelName + ' · Consultas';
-    const footer = document.querySelector('.page-footer');
-    if (footer) footer.textContent = '© ' + cfg.hotelName + ' · Sistema de consultas';
+    setText('.brand-name', 'Asistente de ' + cfg.hotelName);
+    setText('.hero-title', cfg.hotelName);
+    setText('.page-footer-name', cfg.hotelName);
   }
+  setText('.brand-avatar', STATE.mono);
 
-  // Mensaje de bienvenida desde admin o default
-  const welcomeMsg = cfg.welcomeMsg ||
-    `¡Bienvenido/a! 🏨 Soy el asistente del hotel.<br><br>Puedo ayudarte con información sobre habitaciones, precios y conectarte con nuestro equipo para confirmar tu reserva.`;
-  addRow('bot', welcomeMsg);
-  addQuickReplies(['Ver habitaciones', 'Consultar precios', 'Quiero reservar']);
+  const online = cfg.enabled !== false;
+  setBotStatus(online);
+  setInputEnabled(true);
+
+  if (online) {
+    const welcomeMsg = cfg.welcomeMsg ||
+      `¡Hola! 👋 Soy el asistente de <b>${escHtml(name)}</b>.<br><br>Puedo ayudarte con habitaciones, precios y conectarte con nuestro equipo para confirmar tu reserva. ¿En qué te doy una mano?`;
+    addRow('bot', welcomeMsg);
+    addQuickReplies(['Ver habitaciones', 'Consultar precios', 'Quiero reservar']);
+  } else {
+    addRow('bot', `Por ahora el asistente automático no está atendiendo consultas. 🌙<br><br>Podés dejar tu mensaje igual y te responderemos apenas volvamos a estar disponibles.`);
+  }
+  inputEl.focus();
 }
 
-// Input handlers
+// ── INPUT HANDLERS ────────────────────────────────────
 sendBtn.addEventListener('click', () => {
   processInput(inputEl.value);
   inputEl.value = '';
@@ -816,10 +773,9 @@ inputEl.addEventListener('keydown', e => {
 
 inputEl.addEventListener('input', function() {
   this.style.height = 'auto';
-  this.style.height = Math.min(this.scrollHeight, 90) + 'px';
+  this.style.height = Math.min(this.scrollHeight, 96) + 'px';
 });
 
-// Arrancar
 init();
 </script>
 </body>
