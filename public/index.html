@@ -294,8 +294,8 @@
 
   .fx-body { padding: 10px 16px 4px; }
   .fx-row {
-    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
-    padding: 6px 0;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 7px 0;
     animation: rowIn .4s ease both;
   }
   .fx-row:nth-child(1){animation-delay:.08s} .fx-row:nth-child(2){animation-delay:.16s}
@@ -304,9 +304,27 @@
   .fx-row + .fx-row { border-top: 1px solid var(--line-soft); }
   .fx-label { font-size: 9.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
   .fx-val { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--ink); text-align: right; }
-  .fx-val.strike { text-decoration: line-through; color: var(--faint); font-weight: 500; }
-  .fx-val.total { font-size: 17px; color: var(--ink); }
   .fx-val small { font-family: var(--sans); font-size: 9px; font-weight: 500; color: var(--muted); display: block; letter-spacing: .04em; }
+
+  /* Precio de tarifa normal: el precio real y principal — el más grande. */
+  .fx-amt-wrap { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+  .fx-amt-main { font-family: var(--mono); font-size: 19px; font-weight: 700; color: var(--ink); line-height: 1.05; }
+  .fx-amt-caption { font-family: var(--sans); font-size: 8.5px; font-style: italic; font-weight: 500; color: var(--faint); letter-spacing: .01em; }
+
+  /* Precio en efectivo con descuento: más chico, pero como un sello de tinta
+     de conserjería — rotado, borde punteado, verde vivo. Es el "llamativo". */
+  .fx-row-cash { align-items: center; }
+  .fx-cash-wrap { display: flex; align-items: center; gap: 7px; }
+  .fx-cash-stamp {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-family: var(--sans); font-size: 9px; font-weight: 800; letter-spacing: .05em;
+    color: #1f7a4c; background: rgba(46,158,107,.13);
+    border: 1.5px dashed rgba(46,158,107,.55); border-radius: 20px;
+    padding: 3px 9px 3px 8px;
+    transform: rotate(-4deg);
+  }
+  .fx-cash-stamp::before { content: '✓'; font-size: 9px; }
+  .fx-amt-cash { font-family: var(--mono); font-size: 14.5px; font-weight: 700; color: #1f7a4c; }
   .fx-promo {
     display: inline-block; font-size: 8.5px; font-weight: 700; letter-spacing: .1em;
     color: #29622f; background: #e4efe0; border: 1px solid #c8dcc2;
@@ -324,30 +342,29 @@
   .fx-sena .fx-sub { font-size: 9px; color: rgba(246,241,228,.45); margin-top: 2px; letter-spacing: .02em; text-transform: none; font-weight: 500; }
   .fx-sena .fx-val { color: var(--brass-l); font-size: 16px; }
 
-  .fx-saldos { padding: 0 16px 12px; display: flex; flex-direction: column; gap: 5px; }
+  .fx-saldos { padding: 2px 16px 12px; display: flex; flex-direction: column; gap: 7px; }
   .fx-saldo {
-    display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
     font-size: 10.5px; color: var(--muted);
   }
-  .fx-saldo b { font-family: var(--mono); font-size: 11.5px; color: var(--ink); font-weight: 600; }
+  .fx-saldo b { font-family: var(--mono); font-size: 13px; color: var(--ink); font-weight: 700; }
+  .fx-saldo.is-cash b {
+    font-size: 11px; color: #1f7a4c;
+    background: rgba(46,158,107,.13); border: 1.5px dashed rgba(46,158,107,.5);
+    border-radius: 20px; padding: 2px 9px; display: inline-block; transform: rotate(-3deg);
+  }
   .fx-note {
     padding: 8px 16px 11px; border-top: 1px solid var(--line-soft);
     font-size: 9.5px; line-height: 1.5; color: var(--faint); font-style: italic;
   }
 
   /* ── TARJETA DE CONTACTO (handoff) ──────────────────────────── */
-  .contact-card {
-    margin-top: 10px; background: var(--paper-2);
-    border: 1px solid #ddd0b2; border-top: 3px solid var(--brass);
-    border-radius: 6px; overflow: hidden;
-    box-shadow: 0 14px 34px -16px rgba(60,45,20,.45);
-    animation: stamp .5s cubic-bezier(.2,.85,.3,1.1) both;
-  }
-  .contact-summary { padding: 12px 15px; display: flex; flex-direction: column; gap: 7px; border-bottom: 1px solid var(--line-soft); }
-  .cs-row { display: flex; gap: 9px; align-items: baseline; font-size: 11.5px; color: var(--ink); font-weight: 500; }
-  .cs-row span:first-child { flex-shrink: 0; font-size: 12px; }
+  /* Reutiliza la clase .ficha (mismo marco, filete de latón, sombra y
+     animación que la cotización) — solo se agrega el margen y lo propio
+     de esta tarjeta: el divisor de confirmación, los botones y la nota. */
+  .contact-ficha { margin-top: 10px; }
   .contact-divider {
-    padding: 8px 15px; text-align: center; border-bottom: 1px solid var(--line-soft);
+    padding: 8px 15px; text-align: center; border-top: 1px solid var(--line-soft);
     font-size: 9px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--muted);
   }
   .contact-btns { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
@@ -522,8 +539,8 @@ function showHandoffCard() {
   const { handoffData, hotelWhatsapp, hotelEmail } = STATE.pendingHandoff;
   STATE.pendingHandoff = null;
   STATE.handoffStage = 'done';
-  const { bubble } = addRow('bot', 'Acá están los datos de tu consulta. Recordá que la disponibilidad se confirma con nuestro equipo:');
-  bubble.innerHTML += buildContactButtons(handoffData, hotelWhatsapp, hotelEmail);
+  addRow('bot', 'Acá están los datos de tu consulta. Recordá que la disponibilidad se confirma con nuestro equipo:');
+  addRow('bot', buildContactButtons(handoffData, hotelWhatsapp, hotelEmail), { card: true });
   addSys('Reserva lista para confirmar');
 }
 
@@ -664,9 +681,26 @@ function buildQuoteFicha(text) {
 
     if (!hab || !ci || !co || !total) return null;
 
-    const descPorc = promo ? promo[1] : null;
-    const conDesc  = promo ? promo[2].trim() : null;
+    const descPorc = promo && parseInt(promo[1], 10) > 0 ? promo[1] : null;
+    const conDesc  = descPorc ? promo[2].trim() : null;
     const nochesTxt = noches ? `${noches} ${noches === '1' ? 'noche' : 'noches'}` : '';
+
+    // Sin descuento configurado, "cualquier medio" y "solo efectivo" dan el
+    // mismo número — mostrarlos por separado sería confuso, así que se
+    // colapsan en una sola línea. Con descuento sí se distinguen.
+    let saldosHtml = '';
+    if (descPorc && (saldoAny || saldoEf)) {
+      saldosHtml = `
+        <div class="fx-saldos">
+          ${saldoAny ? `<div class="fx-saldo"><span>Saldo al llegar · cualquier medio</span><b>${escHtml(saldoAny)}</b></div>` : ''}
+          ${saldoEf ? `<div class="fx-saldo is-cash"><span>Saldo al llegar · solo efectivo</span><b>${escHtml(saldoEf)}</b></div>` : ''}
+        </div>`;
+    } else if (saldoAny || saldoEf) {
+      saldosHtml = `
+        <div class="fx-saldos">
+          <div class="fx-saldo"><span>Saldo al llegar</span><b>${escHtml(saldoAny || saldoEf)}</b></div>
+        </div>`;
+    }
 
     return `
       <div class="ficha">
@@ -680,19 +714,21 @@ function buildQuoteFicha(text) {
         </div>
         <div class="fx-perf"></div>
         <div class="fx-body">
-          ${conDesc ? `
           <div class="fx-row">
-            <span class="fx-label">Total estadía</span>
-            <span class="fx-val strike">${escHtml(total)}</span>
+            <span class="fx-label">Tarifa por la estadía</span>
+            <span class="fx-amt-wrap">
+              <span class="fx-amt-main">${escHtml(total)}</span>
+              <span class="fx-amt-caption">en un solo pago</span>
+            </span>
           </div>
-          <div class="fx-row">
-            <span class="fx-label">En efectivo<span class="fx-promo">−${escHtml(descPorc)}%</span></span>
-            <span class="fx-val total">${escHtml(conDesc)}</span>
-          </div>` : `
-          <div class="fx-row">
-            <span class="fx-label">Total estadía</span>
-            <span class="fx-val total">${escHtml(total)}</span>
-          </div>`}
+          ${conDesc ? `
+          <div class="fx-row fx-row-cash">
+            <span class="fx-label">Pagando en efectivo</span>
+            <span class="fx-cash-wrap">
+              <span class="fx-cash-stamp">−${escHtml(descPorc)}%</span>
+              <span class="fx-amt-cash">${escHtml(conDesc)}</span>
+            </span>
+          </div>` : ''}
         </div>
         ${senia ? `
         <div class="fx-sena">
@@ -702,11 +738,7 @@ function buildQuoteFicha(text) {
           </div>
           <span class="fx-val">${escHtml(senia)}</span>
         </div>` : ''}
-        ${(saldoAny || saldoEf) ? `
-        <div class="fx-saldos">
-          ${saldoAny ? `<div class="fx-saldo"><span>Saldo al llegar · cualquier medio de pago</span><b>${escHtml(saldoAny)}</b></div>` : ''}
-          ${saldoEf ? `<div class="fx-saldo"><span>Saldo al llegar · solo efectivo</span><b>${escHtml(saldoEf)}</b></div>` : ''}
-        </div>` : ''}
+        ${saldosHtml}
         ${extra ? `<div class="fx-note">${escHtml(extra)}</div>` : ''}
       </div>`;
   } catch (e) { return null; }
@@ -765,12 +797,26 @@ function buildContactButtons(data, whatsapp, email) {
     </a>` : '';
 
   return `
-    <div class="contact-card">
-      <div class="contact-summary">
-        <div class="cs-row"><span>👤</span><span>${escHtml(nombre)}</span></div>
-        <div class="cs-row"><span>🛏️</span><span>${escHtml(hab)}${cama ? ' · ' + escHtml(cama) : ''}${personas ? ' · ' + escHtml(personas) + ' personas' : ''}</span></div>
-        <div class="cs-row"><span>📅</span><span>${fmtFichaDate(checkin)} ⟶ ${fmtFichaDate(checkout)}</span></div>
-        ${precio ? `<div class="cs-row"><span>💰</span><span>${escHtml(precio)}</span></div>` : ''}
+    <div class="ficha contact-ficha">
+      <div class="fx-head">
+        <div class="fx-eyebrow">Reserva a confirmar</div>
+        <div class="fx-room">${escHtml(hab)}${cama ? ` · ${escHtml(cama)}` : ''}</div>
+        <div class="fx-dates">
+          <span>${fmtFichaDate(checkin)}</span><span class="arr">⟶</span><span>${fmtFichaDate(checkout)}</span>
+        </div>
+        ${personas ? `<span class="fx-nights">${escHtml(personas)} ${personas === '1' ? 'persona' : 'personas'}</span>` : ''}
+      </div>
+      <div class="fx-perf"></div>
+      <div class="fx-body">
+        <div class="fx-row">
+          <span class="fx-label">A nombre de</span>
+          <span class="fx-val" style="font-family:var(--sans); font-size:12.5px; font-weight:700; text-transform:capitalize;">${escHtml(nombre)}</span>
+        </div>
+        ${precio ? `
+        <div class="fx-row">
+          <span class="fx-label">Tarifa acordada</span>
+          <span class="fx-amt-wrap"><span class="fx-amt-main">${escHtml(precio)}</span></span>
+        </div>` : ''}
       </div>
       <div class="contact-divider">¿Cómo preferís confirmar?</div>
       <div class="contact-btns">
@@ -847,7 +893,7 @@ async function processInput(text) {
         else addRow('bot', escHtml(quoteText).replace(/\n/g, '<br>'));
       }
       const { bubble } = addRow('bot', 'Acá están los datos de tu consulta. Recordá que la disponibilidad se confirma con nuestro equipo:');
-      bubble.innerHTML += buildContactButtons(handoffData, hotelWhatsapp, hotelEmail);
+      addRow('bot', buildContactButtons(handoffData, hotelWhatsapp, hotelEmail), { card: true });
       addSys('Reserva lista para confirmar');
     } else {
       STATE.history = [...newHistory, { role: 'assistant', content: reply }];
