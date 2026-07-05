@@ -133,11 +133,19 @@ async function getStaticData() {
   const future = new Date(); future.setMonth(future.getMonth() + 6);
   const futureStr = future.toISOString().split("T")[0];
 
-  const [settingsData, roomsData, pricesData] = await Promise.all([
-    fetchSupabase("settings", "key,value", `&key=in.(${SETTINGS_KEYS.join(",")})`),
-    fetchSupabase("rooms", "id,name", "&order=id"),
-    fetchSupabase("daily_prices", "date,doble,triple,cuadruple", `&date=gte.${today}&date=lte.${futureStr}&order=date`),
-  ]);
+  let settingsData, roomsData, pricesData;
+  try {
+    [settingsData, roomsData, pricesData] = await Promise.all([
+      fetchSupabase("settings", "key,value", `&key=in.(${SETTINGS_KEYS.join(",")})`),
+      fetchSupabase("rooms", "id,name", "&order=id"),
+      fetchSupabase("daily_prices", "date,doble,triple,cuadruple", `&date=gte.${today}&date=lte.${futureStr}&order=date`),
+    ]);
+  } catch (e) {
+    // Supabase lento o caído: mejor servir los datos anteriores (aunque el
+    // caché haya vencido) que colgar la función y devolver un 504.
+    if (cache.data) return cache.data;
+    throw e;
+  }
 
   const settings = {};
   if (Array.isArray(settingsData)) settingsData.forEach(s => { settings[s.key] = s.value; });
@@ -149,26 +157,39 @@ async function getStaticData() {
   return cache.data;
 }
 
+// fetch con límite de tiempo. Vercel corta la función a los 25s (504), así
+// que NINGUNA llamada externa puede quedar colgada sin tope: si algo tarda,
+// abortamos y respondemos un mensaje amable en vez de dejar morir la función.
+async function fetchWithTimeout(url, options = {}, ms = 8000) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try {
+    return await fetch(url, { ...options, signal: ctrl.signal });
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 async function fetchSupabase(table, select = "*", params = "") {
   const url = `${SUPABASE_URL}/rest/v1/${table}?select=${encodeURIComponent(select)}${params}`;
-  const res = await fetch(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } });
+  const res = await fetchWithTimeout(url, { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }, 8000);
   return res.json();
 }
 
 async function insertSupabase(table, data) {
-  await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+  await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/${table}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: "return=minimal" },
     body: JSON.stringify(data),
-  });
+  }, 5000);
 }
 
 async function rpcSupabase(fn, args) {
-  await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+  await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
     method: "POST",
     headers: { "Content-Type": "application/json", apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
     body: JSON.stringify(args),
-  });
+  }, 5000);
 }
 
 function fmt(n) { return n && n > 0 ? "$" + Math.round(n).toLocaleString("es-AR") : null; }
@@ -430,17 +451,39 @@ export default async function handler(req) {
     }
 
     const geminiMessages = messages.map(msg => ({ role: msg.role === "assistant" ? "model" : "user", parts: [{ text: msg.content }] }));
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
 
-    const geminiRes = await fetch(geminiUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: buildSystemPrompt(settings, rooms, prices) }] },
-        contents: geminiMessages,
-        generationConfig: { maxOutputTokens: 800, temperature: 0.4 },
-      }),
-    });
+    // Modelo FIJO (no el alias "-latest": Google lo fue moviendo a modelos con
+    // "thinking" activado, que tardan mucho más, filtran su razonamiento al
+    // chat y truncan el JSON). Se puede cambiar con la env var GEMINI_MODEL.
+    const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.5-flash";
+
+    async function callGemini(model, thinkingOff) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+      const generationConfig = { maxOutputTokens: 800, temperature: 0.4 };
+      if (thinkingOff) generationConfig.thinkingConfig = { thinkingBudget: 0 };
+      return fetchWithTimeout(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: buildSystemPrompt(settings, rooms, prices) }] },
+          contents: geminiMessages,
+          generationConfig,
+        }),
+      }, 16000);
+    }
+
+    let geminiRes;
+    try {
+      geminiRes = await callGemini(GEMINI_MODEL, true);
+      // Compatibilidad: si el modelo no acepta thinkingConfig (400) se reintenta
+      // sin él; si el nombre no existe (404), se cae al alias genérico.
+      if (geminiRes.status === 400) geminiRes = await callGemini(GEMINI_MODEL, false);
+      else if (geminiRes.status === 404) geminiRes = await callGemini("gemini-flash-latest", false);
+    } catch (e) {
+      // Timeout o fallo de red hacia Gemini: responder amable (200) en vez de
+      // dejar que Vercel corte con 504 y el chat muestre un error genérico.
+      return json({ reply: "Perdón, me demoré más de lo normal con tu consulta. ¿Me la repetís, por favor?", handoffData: null, hotelWhatsapp, hotelEmail });
+    }
 
     const data = await geminiRes.json();
     const rawReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Lo siento, no pude procesar tu consulta.";
