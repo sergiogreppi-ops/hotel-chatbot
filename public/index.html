@@ -996,8 +996,11 @@ async function init() {
   setInputEnabled(true);
 
   if (online) {
-    const welcomeMsg = cfg.welcomeMsg ||
-      `¡Hola! Soy el asistente de <b>${escHtml(name)}</b>. Puedo contarte sobre habitaciones y tarifas, cotizarte una estadía y dejar tu reserva lista para confirmar con nuestro equipo.`;
+    // AUDITORIA A2: el mensaje configurado en el panel se escapa siempre
+    // (viene de la BD como texto libre); solo el default propio usa HTML.
+    const welcomeMsg = cfg.welcomeMsg
+      ? escHtml(cfg.welcomeMsg).replace(/\n/g, '<br>')
+      : `¡Hola! Soy el asistente de <b>${escHtml(name)}</b>. Puedo contarte sobre habitaciones y tarifas, cotizarte una estadía y dejar tu reserva lista para confirmar con nuestro equipo.`;
     addRow('bot', welcomeMsg);
     addQuickReplies(['Ver habitaciones', 'Consultar precios', 'Quiero reservar']);
   } else {
