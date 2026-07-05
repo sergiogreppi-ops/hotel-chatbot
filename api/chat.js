@@ -1,6 +1,6 @@
 export const config = { runtime: "edge" };
 
-const SUPABASE_URL = "https://ozjqqgwcztuummvwpgfu.supabase.co";
+const SUPABASE_URL = "[https://ozjqqgwcztuummvwpgfu.supabase.co](https://ozjqqgwcztuummvwpgfu.supabase.co)";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96anFxZ3djenR1dW1tdndwZ2Z1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MTA3NzIsImV4cCI6MjA2NjQ4Njc3Mn0.7L7TliaKQllfY4nF5J8Kh3D0TkeVFoPLjbt2nQ0Er0o";
 
 // ── CACHÉ 6 HORAS ─────────────────────────────────────
@@ -62,13 +62,11 @@ const PERSONALITY_PROMPTS = {
   casual: "Usá un tono casual y descontracturado. Podés usar emojis ocasionalmente.",
 };
 
-// Extrae el primer email que encuentre en un texto
 function extractEmail(text) {
   const match = text.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/);
   return match ? match[0] : "";
 }
 
-// Cálculo EXACTO igual que la app de reservas
 function calcQuote(prices, checkin, checkout, tipo, discount, extraInfo = "") {
   const r100  = n => Math.round(n / 100) * 100;
   const r1000 = n => Math.round(n / 1000) * 1000;
@@ -132,7 +130,6 @@ function buildSystemPrompt(settings, rooms, prices) {
   const hotelWhatsapp= settings["hotel_whatsapp"]     || "";
   const hotelAddress = settings["hotel_address"]      || "";
   const hotelEmail   = settings["hotel_email"] || extractEmail(settings["tpl_confirmacion"] || "");
-  const discount     = parseFloat(settings["discount"] || "0") / 100;
   const checkin      = settings["checkin_time"]       || "";
   const checkout     = settings["checkout_time"]      || "";
   const reception    = settings["reception_hours"]    || "";
@@ -141,7 +138,6 @@ function buildSystemPrompt(settings, rooms, prices) {
   const policies     = settings["hotel_policies"]     || "";
   const personality  = settings["bot_personality"]    || "friendly";
   const customTone   = settings["bot_custom_tone"]    || "";
-  const fallback     = settings["bot_fallback_msg"]   || "Esa consulta está fuera de mis posibilidades. Podés contactarnos directamente.";
   const forbidden    = JSON.parse(settings["bot_forbidden"]   || "[]");
   const languages    = JSON.parse(settings["bot_languages"]   || '["es"]');
 
@@ -158,15 +154,15 @@ function buildSystemPrompt(settings, rooms, prices) {
     ? `\nINFORMACIÓN QUE NUNCA PODÉS REVELAR:\n${forbidden.map(f => `- ${f}`).join("\n")}`
     : "";
 
-  return `Sos el asistente virtual de ${hotelName}. Respondés ÚNICAMENTE consultas sobre habitaciones, precios y servicios del hotel. Nunca revelás info de otros huéspedes ni datos internos.
+  return `Sos el asistente virtual de ${hotelName}. Respondés ÚNICAMENTE consultas sobre habitaciones, precios y servicios del hotel.
 
 PERSONALIDAD: ${PERSONALITY_PROMPTS[personality] || PERSONALITY_PROMPTS.friendly}${customTone ? `\nTONO ADICIONAL: ${customTone}` : ""}${langNote}${langNoteP}
 
 INFORMACIÓN DEL HOTEL:
 - Nombre: ${hotelName}
 ${hotelAddress ? `- Dirección: ${hotelAddress}` : ""}
-${hotelPhone ? `- Teléfono para llamadas: ${hotelPhone}` : ""}
-${hotelWhatsapp ? `- WhatsApp para mensajes: ${hotelWhatsapp}` : ""}
+${hotelPhone ? `- Teléfono: ${hotelPhone}` : ""}
+${hotelWhatsapp ? `- WhatsApp: ${hotelWhatsapp}` : ""}
 ${hotelEmail ? `- Email: ${hotelEmail}` : ""}
 ${checkin ? `- Check-in: ${checkin}` : ""}
 ${checkout ? `- Check-out: ${checkout}` : ""}
@@ -182,19 +178,15 @@ HOY: ${today}
 TARIFAS DISPONIBLES:
 ${priceLines || "Sin tarifas cargadas."}
 
-INSTRUCCIONES:
-- Respondé en español. Máximo 2 oraciones salvo cuando mostrás una cotización.
-- EQUIVALENCIAS AUTOMÁTICAS (aplicar siempre sin preguntar):
-  * "habitación doble" o "para 2 personas" → tipo=doble, personas=2
-  * "habitación triple" o "para 3 personas" → tipo=triple, personas=3
-  * "habitación cuádruple" o "para 4 personas" → tipo=cuadruple, personas=4
-- Cuando el cliente pida precio para fechas concretas y tengas checkin, checkout y tipo de habitación, respondé ÚNICA Y EXCLUSIVAMENTE con este JSON, sin ningún texto adicional, sin calcular nada vos mismo, sin mostrar precios parciales:
+INSTRUCCIONES CRÍTICAS DE COTIZACIÓN Y RESERVA:
+- NUNCA calcules precios ni muestres totales vos mismo. El sistema de cotización es automático.
+- NUNCA hagas operaciones matemáticas en el chat.
+- EQUIVALENCIAS AUTOMÁTICAS: "para 2 personas" → tipo=doble.
+- Cuando el cliente pida precio para fechas concretas, respondé ÚNICA Y EXCLUSIVAMENTE con este formato, sin comillas triples (```) ni texto extra:
 QUOTE_REQUEST:{"checkin":"YYYY-MM-DD","checkout":"YYYY-MM-DD","tipo":"doble|triple|cuadruple"}
-- NUNCA calcules precios ni muestres totales vos mismo. El sistema de cotización es automático y calcula descuentos, seña y saldo. Si intentás calcularlo vos, el resultado será incorrecto.
-- Si el cliente no especificó las fechas o el tipo de habitación, preguntale solo lo que falta. Nunca preguntes cantidad de personas si ya sabés el tipo, ni el tipo si ya sabés las personas.
-- Si el cliente quiere CONFIRMAR o RESERVAR, los únicos datos que necesitás son: nombre, fechas, tipo de habitación, cantidad de personas y tipo de cama (matrimonial o separadas, solo aplica para doble). NUNCA pidas teléfono ni email. Cuando tengas todos los datos, respondé ÚNICA Y EXCLUSIVAMENTE con el JSON, sin ningún texto antes ni después:
+- Si el cliente quiere CONFIRMAR la reserva, los únicos datos que necesitás son: nombre, fechas, tipo de habitación, cantidad de personas y tipo de cama. Cuando tengas todo, respondé ÚNICA Y EXCLUSIVAMENTE con este formato, sin saltos de línea ni texto extra:
 HANDOFF_JSON:{"nombre":"...","checkin":"...","checkout":"...","habitacion":"...","personas":"...","precio":"...","cama":"..."}
-- Si faltan datos para el handoff, preguntá de a uno.
+- Si falta algún dato, preguntá.
 - Si la consulta no es sobre el hotel: OUT_OF_SCOPE
 - Si no tenés información suficiente: UNANSWERED`;
 }
@@ -213,9 +205,8 @@ export default async function handler(req) {
     const body = await req.json();
     const { messages, lastQuote, action } = body;
     
-    // --- CAMBIO A GEMINI ---
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-    if (!GEMINI_API_KEY) return new Response(JSON.stringify({ error: "API key de Gemini no configurada" }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });
+    if (!GEMINI_API_KEY) return new Response(JSON.stringify({ error: "API key no configurada" }), { status: 500, headers: cors });
 
     const { settings, rooms, prices } = await getStaticData();
     const hotelWhatsapp = settings["hotel_whatsapp"] || "";
@@ -223,152 +214,76 @@ export default async function handler(req) {
 
     if (action === 'config') {
       return new Response(JSON.stringify({
-        config: {
-          hotelName:  settings["hotel_name"]      || "",
-          welcomeMsg: settings["bot_welcome_msg"] || "",
-          enabled:    settings["bot_enabled"]     !== "false",
-        }
+        config: { hotelName: settings["hotel_name"] || "", welcomeMsg: settings["bot_welcome_msg"] || "", enabled: settings["bot_enabled"] !== "false" }
       }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
     if (settings["bot_enabled"] === "false") {
-      const offMsg = settings["bot_fallback_msg"] || "El asistente no está disponible en este momento. Por favor contactanos directamente.";
-      return new Response(JSON.stringify({ reply: offMsg, hotelWhatsapp, hotelEmail }), {
-        status: 200, headers: { ...cors, "Content-Type": "application/json" },
-      });
+      const offMsg = settings["bot_fallback_msg"] || "El asistente no está disponible.";
+      return new Response(JSON.stringify({ reply: offMsg, hotelWhatsapp, hotelEmail }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    const systemInstruction = buildSystemPrompt(settings, rooms, prices);
-
-    // Transformar el historial de mensajes al formato que entiende Gemini
-    const geminiMessages = messages.map(msg => ({
-      role: msg.role === "assistant" ? "model" : "user",
-      parts: [{ text: msg.content }]
-    }));
-
+    const geminiMessages = messages.map(msg => ({ role: msg.role === "assistant" ? "model" : "user", parts: [{ text: msg.content }] }));
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
     
     const geminiRes = await fetch(geminiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: systemInstruction }] },
-        contents: geminiMessages,
-        generationConfig: { maxOutputTokens: 600 }
-      }),
+      body: JSON.stringify({ systemInstruction: { parts: [{ text: buildSystemPrompt(settings, rooms, prices) }] }, contents: geminiMessages, generationConfig: { maxOutputTokens: 600 } }),
     });
 
     const data = await geminiRes.json();
-    
-    if (!geminiRes.ok) {
-        console.error("Error de Gemini:", data);
-        throw new Error("Fallo en la comunicación con la API de IA");
-    }
+    const rawReply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Lo siento, no pude procesar tu consulta.";
+    let reply = rawReply.trim();
 
-    const reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Lo siento, no pude procesar tu consulta.";
-
-    // Todo el bloque de QUOTE_REQUEST sigue exactamente igual
-    if (reply.trim().startsWith("QUOTE_REQUEST:")) {
+    // FILTRO ANTIBALAS: Extraer JSON limpio de QUOTE_REQUEST
+    if (reply.includes("QUOTE_REQUEST:")) {
       try {
-        const qData = JSON.parse(reply.trim().replace("QUOTE_REQUEST:", ""));
+        const jsonStr = reply.substring(reply.indexOf("{"), reply.lastIndexOf("}") + 1);
+        const qData = JSON.parse(jsonStr);
         const discount = settings["discount"] || "0";
-
-        const ci = settings["checkin_time"] || "";
-        const co = settings["checkout_time"] || "";
-        const horarios = ci && co ? `- Check-in ${ci} / Check-out ${co}.` : "";
-        const serviciosExtra = settings["quote_extra_info"] || "";
-        const extraLines = [serviciosExtra, horarios, "- Las tarifas y promociones pueden variar si la reserva no queda confirmada."]
-          .filter(Boolean).join("\n");
-        const extraInfo = `Información adicional:\n${extraLines}`;
-
+        const extraInfo = `Información adicional:\n- Las tarifas pueden variar si la reserva no se confirma.`;
         const quote = calcQuote(prices, qData.checkin, qData.checkout, qData.tipo, discount, extraInfo);
+        
         if (quote && !quote.error) {
-          const quoteWithConfirm = quote.text + "\n\n¿Querés confirmar la reserva?";
-          return new Response(JSON.stringify({ reply: quoteWithConfirm, quoteData: { checkin: qData.checkin, checkout: qData.checkout, tipo: qData.tipo, precio: quote.totalSinDesc }, hotelWhatsapp: settings["hotel_whatsapp"] || "", hotelEmail: settings["hotel_email"] || extractEmail(settings["tpl_confirmacion"] || "") }), {
-            status: 200, headers: { ...cors, "Content-Type": "application/json" },
-          });
+          return new Response(JSON.stringify({ reply: quote.text + "\n\n¿Querés confirmar la reserva?", quoteData: { checkin: qData.checkin, checkout: qData.checkout, tipo: qData.tipo, precio: quote.totalSinDesc }, hotelWhatsapp, hotelEmail }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
         } else {
-          const errMsg = quote?.error || "No hay tarifas cargadas para esas fechas.";
-          return new Response(JSON.stringify({ reply: errMsg, hotelWhatsapp: settings["hotel_whatsapp"] || "", hotelEmail: settings["hotel_email"] || "" }), {
-            status: 200, headers: { ...cors, "Content-Type": "application/json" },
-          });
+          return new Response(JSON.stringify({ reply: quote?.error || "No hay tarifas cargadas para esas fechas.", hotelWhatsapp, hotelEmail }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
         }
-      } catch(e) { }
+      } catch(e) { console.error("Error parseando QUOTE:", e); }
     }
 
-    if (reply.trim() === "UNANSWERED" || reply.trim() === "OUT_OF_SCOPE") {
-      const lastUser = [...messages].reverse().find(m => m.role === "user");
-      if (lastUser) {
-        try {
-          await insertSupabase("chatbot_unanswered", {
-            question: lastUser.content.substring(0, 500),
-            status: "pending",
-            context: messages.slice(-4).map(m => `${m.role}: ${m.content}`).join(" | ").substring(0, 500),
-            frequency: 1,
-            created_at: new Date().toISOString(),
-          });
-        } catch(e) {}
-      }
-    }
-
-    let finalReply = reply;
-
-    const handoffMatch = reply.match(/HANDOFF_JSON:(\{.+\})/s);
-    if (handoffMatch) {
+    // FILTRO ANTIBALAS: Extraer JSON limpio de HANDOFF_JSON
+    if (reply.includes("HANDOFF_JSON:")) {
       try {
-        const raw = JSON.parse(handoffMatch[1]);
+        // Busca estrictamente desde la primera llave de apertura hasta la última de cierre
+        const jsonStr = reply.substring(reply.indexOf("{"), reply.lastIndexOf("}") + 1);
+        const raw = JSON.parse(jsonStr);
         const handoffData = {
-          nombre:     raw.nombre     || "",
-          checkin:    raw.checkin    || lastQuote?.checkin    || "",
-          checkout:   raw.checkout   || lastQuote?.checkout   || "",
-          habitacion: raw.habitacion || lastQuote?.habitacion || "",
-          personas:   raw.personas   || lastQuote?.personas   || "",
-          precio:     raw.precio     || lastQuote?.precio     || "",
-          cama:       raw.cama       || "",
+          nombre: raw.nombre || "", checkin: raw.checkin || lastQuote?.checkin || "", checkout: raw.checkout || lastQuote?.checkout || "", habitacion: raw.habitacion || lastQuote?.habitacion || "", personas: raw.personas || lastQuote?.personas || "", precio: raw.precio || lastQuote?.precio || "", cama: raw.cama || ""
         };
 
-        const discount = settings["discount"] || "0";
-        const tipo = handoffData.habitacion.toLowerCase().includes("triple") ? "triple"
-                   : handoffData.habitacion.toLowerCase().includes("cuádruple") || handoffData.habitacion.toLowerCase().includes("cuadruple") ? "cuadruple"
-                   : "doble";
-
+        const tipo = handoffData.habitacion.toLowerCase().includes("triple") ? "triple" : handoffData.habitacion.toLowerCase().includes("cuadruple") ? "cuadruple" : "doble";
         let quoteText = null;
+        
         if (handoffData.checkin && handoffData.checkout) {
-          const ci = settings["checkin_time"] || "";
-          const co = settings["checkout_time"] || "";
-          const horarios = ci && co ? `- Check-in ${ci} / Check-out ${co}.` : "";
-          const serviciosExtra = settings["quote_extra_info"] || "";
-          const extraLines = [serviciosExtra, horarios, "- Las tarifas y promociones pueden variar si la reserva no queda confirmada."]
-            .filter(Boolean).join("\n");
-          const extraInfo = `Información adicional:\n${extraLines}`;
-          const q = calcQuote(prices, handoffData.checkin, handoffData.checkout, tipo, discount, extraInfo);
-          if (q && !q.error) {
-            handoffData.precio = q.totalSinDesc;
-            handoffData.habitacion = tipo;
-            quoteText = q.text;
-          }
+          const q = calcQuote(prices, handoffData.checkin, handoffData.checkout, tipo, settings["discount"] || "0", "");
+          if (q && !q.error) { handoffData.precio = q.totalSinDesc; handoffData.habitacion = tipo; quoteText = q.text; }
         }
+        
         try {
-          await insertSupabase("chatbot_leads", {
-            name: handoffData.nombre,
-            phone: "",
-            context: `Hab: ${handoffData.habitacion}, Personas: ${handoffData.personas}, Fechas: ${handoffData.checkin} → ${handoffData.checkout}, Precio: ${handoffData.precio}`,
-            created_at: new Date().toISOString(),
-          });
+          await insertSupabase("chatbot_leads", { name: handoffData.nombre, phone: "", context: `Hab: ${handoffData.habitacion}, Fechas: ${handoffData.checkin} → ${handoffData.checkout}`, created_at: new Date().toISOString() });
         } catch(e) {}
-        return new Response(JSON.stringify({ reply: "QUOTE_BEFORE_HANDOFF", handoffData, quoteText, hotelWhatsapp, hotelEmail }), {
-          status: 200, headers: { ...cors, "Content-Type": "application/json" },
-        });
-      } catch(e) { }
+        
+        return new Response(JSON.stringify({ reply: "QUOTE_BEFORE_HANDOFF", handoffData, quoteText, hotelWhatsapp, hotelEmail }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+      } catch(e) { console.error("Error parseando HANDOFF:", e); }
     }
 
-    if (reply.trim() === "OUT_OF_SCOPE" || reply.trim() === "UNANSWERED") {
-      finalReply = settings["bot_fallback_msg"] || "Esa consulta está fuera de mis posibilidades. Podés contactarnos directamente.";
+    if (reply === "UNANSWERED" || reply === "OUT_OF_SCOPE") {
+      return new Response(JSON.stringify({ reply: settings["bot_fallback_msg"] || "Esa consulta está fuera de mis posibilidades. Podés contactarnos directamente.", handoffData: null, hotelWhatsapp, hotelEmail }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    return new Response(JSON.stringify({ reply: finalReply, handoffData: null, hotelWhatsapp, hotelEmail }), {
-      status: 200, headers: { ...cors, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ reply: reply.replace(/```json/gi, "").replace(/```/g, "").replace(/HANDOFF_JSON:/g, ""), handoffData: null, hotelWhatsapp, hotelEmail }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
 
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });
