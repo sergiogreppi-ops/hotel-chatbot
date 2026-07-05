@@ -107,6 +107,24 @@ function looksLikeName(s) {
   return /[a-záéíóúñ]/i.test(s);
 }
 
+// Busca el nombre en los mensajes del cliente con patrones CLAROS
+// ("soy X", "me llamo X", "mi nombre es X", "a nombre de X", "para X").
+// Devuelve "" si no hay una coincidencia confiable (mejor preguntar que inventar).
+function findNameInHistory(messages) {
+  const re = /\b(?:soy|me llamo|mi nombre es|mi nombre:|nombre:|a nombre de|reserva a nombre de|para)\s+([a-zA-ZáéíóúñÁÉÍÓÚÑ]+(?:\s+[a-zA-ZáéíóúñÁÉÍÓÚÑ]+){0,2})/i;
+  // Recorrer de lo más reciente a lo más viejo; solo mensajes del cliente.
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.role !== "user") continue;
+    const match = (m.content || "").match(re);
+    if (match) {
+      const cand = cleanName(match[1]);
+      if (looksLikeName(cand) && !isJunkName(cand)) return cand;
+    }
+  }
+  return "";
+}
+
 async function getStaticData() {
   const now = Date.now();
   if (cache.data && (now - cache.ts) < CACHE_TTL) return cache.data;
@@ -399,6 +417,15 @@ export default async function handler(req) {
 
     // Paso 1: hay cotización, el bot preguntó si confirma y el cliente dijo que sí.
     if (lastQuote && botAskedConfirm && isAffirmative(lastUserMsg)) {
+      // ¿El cliente ya había dado su nombre antes? Si sí, no se lo volvemos a pedir.
+      const nombrePrevio = findNameInHistory(messages);
+      if (nombrePrevio) {
+        const { handoffData } = buildHandoffResponse({ nombre: nombrePrevio }, lastQuote, prices, settings, hotelWhatsapp, hotelEmail);
+        try {
+          await insertSupabase("chatbot_leads", { name: String(handoffData.nombre).slice(0, 120), phone: "", context: `Hab: ${handoffData.habitacion}, Fechas: ${handoffData.checkin} → ${handoffData.checkout}, Precio: ${handoffData.precio}` });
+        } catch (e) {}
+        return json({ reply: "HANDOFF_READY", handoffData, quoteText: null, hotelWhatsapp, hotelEmail });
+      }
       return json({ reply: "¡Genial! ¿A nombre de quién hago la reserva?", handoffData: null, hotelWhatsapp, hotelEmail });
     }
 
