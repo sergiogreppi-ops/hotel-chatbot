@@ -79,6 +79,34 @@ function isJunkName(n) {
   return false;
 }
 
+// ¿El mensaje es una afirmación de "sí, confirmar"?
+function isAffirmative(text) {
+  const s = (text || "").trim().toLowerCase().replace(/[!¡.,]/g, "");
+  if (!s) return false;
+  if (/^(s[ií]+|s[ií] quiero|dale|ok|okey|oka|listo|de una|obvio|claro|por supuesto|acepto|perfecto|sip|sii+|va|vale|correcto|exacto)$/.test(s)) return true;
+  return /\bconfirm/.test(s) || /quiero reservar/.test(s) || /^si\b/.test(s);
+}
+
+// Limpia un mensaje para quedarse con el nombre ("me llamo Oscar" -> "Oscar").
+function cleanName(text) {
+  let s = (text || "").trim();
+  s = s.replace(/^hola[,\s]+/i, "");
+  s = s.replace(/^(soy|me llamo|mi nombre es|el nombre es|es a nombre de|a nombre de|nombre:?)\s+/i, "");
+  s = s.replace(/[.,!¡?]+$/, "").trim();
+  return s;
+}
+
+// ¿El texto parece efectivamente un nombre (y no una nueva consulta)?
+function looksLikeName(s) {
+  if (!s) return false;
+  if (s.includes("?") || s.includes("¿")) return false;
+  if (s.length > 40) return false;
+  if (/\b(precio|cuanto|cuánto|fecha|habitaci|disponib|noche|cuesta|vale|sale|reserv|consult|hola|gracias|informa)\b/i.test(s)) return false;
+  const words = s.split(/\s+/);
+  if (words.length > 4) return false;
+  return /[a-záéíóúñ]/i.test(s);
+}
+
 async function getStaticData() {
   const now = Date.now();
   if (cache.data && (now - cache.ts) < CACHE_TTL) return cache.data;
@@ -254,6 +282,8 @@ TARIFAS DISPONIBLES:
 ${priceLines || "Sin tarifas cargadas."}
 
 REGLAS DE FORMATO (MUY IMPORTANTE):
+- Respondé SIEMPRE en español (salvo que el cliente escriba en inglés o portugués).
+- NUNCA muestres tu razonamiento ni pienses en voz alta. Devolvé SOLO el mensaje final para el cliente, sin frases como "wait", "let's" ni notas internas.
 - Respondé SIEMPRE en texto plano. PROHIBIDO usar markdown, viñetas, asteriscos (*), guiones de lista o comillas invertidas (backticks \`).
 - NUNCA muestres al cliente los datos de la reserva como una lista de campos, ni menciones nombres técnicos como nombre, checkin, checkout, habitacion, personas, precio, tipo o cama. Esos nombres son internos.
 
@@ -344,6 +374,32 @@ export default async function handler(req) {
 
     if (settings["bot_enabled"] === "false") {
       return json({ reply: settings["bot_fallback_msg"] || "El asistente no está disponible.", hotelWhatsapp, hotelEmail });
+    }
+
+    // ── FLUJO DETERMINÍSTICO DE RESERVA (no depende del modelo) ──────────
+    // Los pasos mecánicos (confirmar → pedir nombre → armar ficha) los maneja
+    // el backend, para que el modelo no pueda romperlos divagando.
+    const lastUserMsg = [...messages].reverse().find(m => m.role === "user")?.content || "";
+    const lastBotMsg  = [...messages].reverse().find(m => m.role === "assistant")?.content || "";
+    const botAskedName    = /(a nombre de qui|nombre completo|tu nombre|de qui[eé]n hago|de qui[eé]n la)/i.test(lastBotMsg);
+    const botAskedConfirm = /(confirmar la reserva|confirmar tu reserva|quer[eé]s confirmar)/i.test(lastBotMsg);
+
+    // Paso 2: el bot ya pidió el nombre y hay cotización → este mensaje ES el nombre.
+    if (lastQuote && botAskedName) {
+      const nombre = cleanName(lastUserMsg);
+      if (looksLikeName(nombre) && !isJunkName(nombre)) {
+        const { handoffData } = buildHandoffResponse({ nombre }, lastQuote, prices, settings, hotelWhatsapp, hotelEmail);
+        try {
+          await insertSupabase("chatbot_leads", { name: String(handoffData.nombre).slice(0, 120), phone: "", context: `Hab: ${handoffData.habitacion}, Fechas: ${handoffData.checkin} → ${handoffData.checkout}, Precio: ${handoffData.precio}` });
+        } catch (e) {}
+        return json({ reply: "HANDOFF_READY", handoffData, quoteText: null, hotelWhatsapp, hotelEmail });
+      }
+      // Si no parece un nombre (hizo otra consulta), sigue el flujo normal (modelo).
+    }
+
+    // Paso 1: hay cotización, el bot preguntó si confirma y el cliente dijo que sí.
+    if (lastQuote && botAskedConfirm && isAffirmative(lastUserMsg)) {
+      return json({ reply: "¡Genial! ¿A nombre de quién hago la reserva?", handoffData: null, hotelWhatsapp, hotelEmail });
     }
 
     const geminiMessages = messages.map(msg => ({ role: msg.role === "assistant" ? "model" : "user", parts: [{ text: msg.content }] }));
