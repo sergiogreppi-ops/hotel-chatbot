@@ -1,6 +1,6 @@
 export const config = { runtime: "edge" };
 
-const SUPABASE_URL = "[https://ozjqqgwcztuummvwpgfu.supabase.co](https://ozjqqgwcztuummvwpgfu.supabase.co)";
+const SUPABASE_URL = "https://ozjqqgwcztuummvwpgfu.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96anFxZ3djenR1dW1tdndwZ2Z1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MTA3NzIsImV4cCI6MjA2NjQ4Njc3Mn0.7L7TliaKQllfY4nF5J8Kh3D0TkeVFoPLjbt2nQ0Er0o";
 
 // ── CACHÉ 6 HORAS ─────────────────────────────────────
@@ -115,7 +115,7 @@ Total de la estadía: ${fmtARS(total)} en un pago.
 
 Promoción: -${descPorc}% de descuento en efectivo: ${fmtARS(conDescuento)}
 
-Para confirmar la reserva se le pedirá una seña de ${fmtARS(senia)} por transferencia bancaria.
+Si decidís avanzar, para confirmar esta reserva nuestro equipo te solicitará una seña de ${fmtARS(senia)} por transferencia bancaria.
 
 El saldo restante se abona al llegar:
 ${fmtARS(saldoSinDesc)} con cualquier medio de pago el día de llegada.
@@ -154,7 +154,7 @@ function buildSystemPrompt(settings, rooms, prices) {
     ? `\nINFORMACIÓN QUE NUNCA PODÉS REVELAR:\n${forbidden.map(f => `- ${f}`).join("\n")}`
     : "";
 
-  return `Sos el asistente virtual de ${hotelName}. Respondés ÚNICAMENTE consultas sobre habitaciones, precios y servicios del hotel.
+  return `Sos el asistente virtual de ${hotelName}. Tu objetivo principal es COTIZAR estadías y brindar información. DEBES ACLARAR siempre que no podés confirmar reservas automáticamente y que tu función es brindar presupuesto y derivar al equipo humano para concretar la reserva.
 
 PERSONALIDAD: ${PERSONALITY_PROMPTS[personality] || PERSONALITY_PROMPTS.friendly}${customTone ? `\nTONO ADICIONAL: ${customTone}` : ""}${langNote}${langNoteP}
 
@@ -182,9 +182,9 @@ INSTRUCCIONES CRÍTICAS DE COTIZACIÓN Y RESERVA:
 - NUNCA calcules precios ni muestres totales vos mismo. El sistema de cotización es automático.
 - NUNCA hagas operaciones matemáticas en el chat.
 - EQUIVALENCIAS AUTOMÁTICAS: "para 2 personas" → tipo=doble.
-- Cuando el cliente pida precio para fechas concretas, respondé ÚNICA Y EXCLUSIVAMENTE con este formato, sin comillas triples (```) ni texto extra:
+- Cuando el cliente pida precio para fechas concretas, respondé ÚNICA Y EXCLUSIVAMENTE con este formato, sin comillas triples (\`\`\`) ni texto extra:
 QUOTE_REQUEST:{"checkin":"YYYY-MM-DD","checkout":"YYYY-MM-DD","tipo":"doble|triple|cuadruple"}
-- Si el cliente quiere CONFIRMAR la reserva, los únicos datos que necesitás son: nombre, fechas, tipo de habitación, cantidad de personas y tipo de cama. Cuando tengas todo, respondé ÚNICA Y EXCLUSIVAMENTE con este formato, sin saltos de línea ni texto extra:
+- Si el cliente quiere AVANZAR con la reserva o SOLICITARLA, los únicos datos que necesitás son: nombre, fechas, tipo de habitación, cantidad de personas y tipo de cama. Cuando tengas todo, respondé ÚNICA Y EXCLUSIVAMENTE con este formato, sin saltos de línea ni texto extra:
 HANDOFF_JSON:{"nombre":"...","checkin":"...","checkout":"...","habitacion":"...","personas":"...","precio":"...","cama":"..."}
 - Si falta algún dato, preguntá.
 - Si la consulta no es sobre el hotel: OUT_OF_SCOPE
@@ -246,7 +246,7 @@ export default async function handler(req) {
         const quote = calcQuote(prices, qData.checkin, qData.checkout, qData.tipo, discount, extraInfo);
         
         if (quote && !quote.error) {
-          return new Response(JSON.stringify({ reply: quote.text + "\n\n¿Querés confirmar la reserva?", quoteData: { checkin: qData.checkin, checkout: qData.checkout, tipo: qData.tipo, precio: quote.totalSinDesc }, hotelWhatsapp, hotelEmail }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+          return new Response(JSON.stringify({ reply: quote.text + "\n\n¿Te gustaría que envíe estos datos a recepción para iniciar tu reserva?", quoteData: { checkin: qData.checkin, checkout: qData.checkout, tipo: qData.tipo, precio: quote.totalSinDesc }, hotelWhatsapp, hotelEmail }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
         } else {
           return new Response(JSON.stringify({ reply: quote?.error || "No hay tarifas cargadas para esas fechas.", hotelWhatsapp, hotelEmail }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
         }
@@ -256,7 +256,6 @@ export default async function handler(req) {
     // FILTRO ANTIBALAS: Extraer JSON limpio de HANDOFF_JSON
     if (reply.includes("HANDOFF_JSON:")) {
       try {
-        // Busca estrictamente desde la primera llave de apertura hasta la última de cierre
         const jsonStr = reply.substring(reply.indexOf("{"), reply.lastIndexOf("}") + 1);
         const raw = JSON.parse(jsonStr);
         const handoffData = {
@@ -283,9 +282,8 @@ export default async function handler(req) {
       return new Response(JSON.stringify({ reply: settings["bot_fallback_msg"] || "Esa consulta está fuera de mis posibilidades. Podés contactarnos directamente.", handoffData: null, hotelWhatsapp, hotelEmail }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    return new Response(JSON.stringify({ reply: reply.replace(/```json/gi, "").replace(/```/g, "").replace(/HANDOFF_JSON:/g, ""), handoffData: null, hotelWhatsapp, hotelEmail }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ reply: reply.replace(/
+http://googleusercontent.com/immersive_entry_chip/0
 
-  } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: { ...cors, "Content-Type": "application/json" } });
-  }
-}
+### Un último detalle importante
+En el código no modifiqué el mensaje de bienvenida con el que arranca el chat, porque tu sistema lo está tomando de Supabase. Para que el cambio sea 100% efectivo, vas a tener que entrar al *Table Editor* de tu proyecto, buscar la tabla `settings`, encontrar la fila donde la `key` es **`bot_welcome_msg`**, y actualizar ese texto para que ya no diga *"confirmar tu reserva"*, sino algo como *"cotizar tu estadía e iniciar el contacto"*.
