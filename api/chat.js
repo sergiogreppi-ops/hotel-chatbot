@@ -1,11 +1,34 @@
 export const config = { runtime: "edge" };
 
-const SUPABASE_URL = "https://ozjqqgwcztuummvwpgfu.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im96anFxZ3djenR1dW1tdndwZ2Z1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA5MTA3NzIsImV4cCI6MjA2NjQ4Njc3Mn0.7L7TliaKQllfY4nF5J8Kh3D0TkeVFoPLjbt2nQ0Er0o";
+// ── CONFIG POR VARIABLES DE ENTORNO ───────────────────
+// En Vercel → Settings → Environment Variables agregar:
+//   SUPABASE_URL      = https://pozunquwpuxqgiuajuft.supabase.co
+//   SUPABASE_ANON_KEY = (anon key del proyecto NUEVO, Settings → API)
+//   GEMINI_API_KEY    = (ya la tenés cargada)
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY;
 
-// ── CACHÉ 6 HORAS ─────────────────────────────────────
-const CACHE_TTL = 6 * 60 * 60 * 1000;
+// ── CACHÉ 10 MINUTOS ──────────────────────────────────
+// TTL corto a propósito: el bot tiene que cotizar con los MISMOS
+// valores que la app principal. Si cambiás tarifas o settings,
+// el bot los ve a los 10 min como máximo.
+const CACHE_TTL = 10 * 60 * 1000;
 let cache = { data: null, ts: 0 };
+
+// Solo las keys que el bot necesita. No trae report_password,
+// cleaning_config ni el resto de settings internas de la app.
+const SETTINGS_KEYS = [
+  "hotel_name", "hotel_phone", "hotel_whatsapp", "hotel_address",
+  "hotel_email", "checkin_time", "checkout_time", "reception_hours",
+  "hotel_description", "hotel_services", "hotel_policies",
+  "quote_extra_info", "bot_personality", "bot_custom_tone",
+  "bot_welcome_msg", "bot_fallback_msg", "bot_forbidden",
+  "bot_languages", "bot_enabled", "discount", "tpl_confirmacion",
+];
+
+function safeJsonParse(str, fallback) {
+  try { return JSON.parse(str); } catch (e) { return fallback; }
+}
 
 async function getStaticData() {
   const now = Date.now();
@@ -16,7 +39,7 @@ async function getStaticData() {
   const futureStr = future.toISOString().split("T")[0];
 
   const [settingsData, roomsData, pricesData] = await Promise.all([
-    fetchSupabase("settings", "key,value"),
+    fetchSupabase("settings", "key,value", `&key=in.(${SETTINGS_KEYS.join(",")})`),
     fetchSupabase("rooms", "id,name", "&order=id"),
     fetchSupabase("daily_prices", "date,doble,triple,cuadruple", `&date=gte.${today}&date=lte.${futureStr}&order=date`),
   ]);
@@ -52,6 +75,20 @@ async function insertSupabase(table, data) {
   });
 }
 
+// Llamada a RPC (mismo canal que usa la app principal para escrituras
+// concurrentes: el RPC log_unanswered_question deduplica server-side).
+async function rpcSupabase(fn, args) {
+  await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+    },
+    body: JSON.stringify(args),
+  });
+}
+
 function fmt(n) {
   return n && n > 0 ? "$" + Math.round(n).toLocaleString("es-AR") : null;
 }
@@ -67,6 +104,8 @@ function extractEmail(text) {
   return match ? match[0] : "";
 }
 
+// Mismos redondeos que quote.js de la app principal:
+// total con descuento a centenas, saldo (~2/3) a miles, seña = total − saldo.
 function calcQuote(prices, checkin, checkout, tipo, discount, extraInfo = "") {
   const r100  = n => Math.round(n / 100) * 100;
   const r1000 = n => Math.round(n / 1000) * 1000;
@@ -115,7 +154,7 @@ Total de la estadía: ${fmtARS(total)} en un pago.
 
 Promoción: -${descPorc}% de descuento en efectivo: ${fmtARS(conDescuento)}
 
-Si decidís avanzar, para confirmar esta reserva nuestro equipo te solicitará una seña de ${fmtARS(senia)} por transferencia bancaria.
+Para confirmar la reserva se le pedirá una seña de ${fmtARS(senia)} por transferencia bancaria.
 
 El saldo restante se abona al llegar:
 ${fmtARS(saldoSinDesc)} con cualquier medio de pago el día de llegada.
@@ -138,8 +177,8 @@ function buildSystemPrompt(settings, rooms, prices) {
   const policies     = settings["hotel_policies"]     || "";
   const personality  = settings["bot_personality"]    || "friendly";
   const customTone   = settings["bot_custom_tone"]    || "";
-  const forbidden    = JSON.parse(settings["bot_forbidden"]   || "[]");
-  const languages    = JSON.parse(settings["bot_languages"]   || '["es"]');
+  const forbidden    = safeJsonParse(settings["bot_forbidden"] || "[]", []);
+  const languages    = safeJsonParse(settings["bot_languages"] || '["es"]', ["es"]);
 
   const langNote  = languages.includes("en") ? " Si el cliente escribe en inglés, respondé en inglés." : "";
   const langNoteP = languages.includes("pt") ? " Si el cliente escribe en portugués, respondé en portugués." : "";
@@ -150,11 +189,11 @@ function buildSystemPrompt(settings, rooms, prices) {
     .join("\n");
 
   const roomList = rooms.map(r => r.name).join(", ") || "doble, triple, cuádruple";
-  const forbiddenBlock = forbidden.length > 0
+  const forbiddenBlock = Array.isArray(forbidden) && forbidden.length > 0
     ? `\nINFORMACIÓN QUE NUNCA PODÉS REVELAR:\n${forbidden.map(f => `- ${f}`).join("\n")}`
     : "";
 
-  return `Sos el asistente virtual de ${hotelName}. Tu objetivo principal es COTIZAR estadías y brindar información. DEBES ACLARAR siempre que no podés confirmar reservas automáticamente y que tu función es brindar presupuesto y derivar al equipo humano para concretar la reserva.
+  return `Sos el asistente virtual de ${hotelName}. Respondés ÚNICAMENTE consultas sobre habitaciones, precios y servicios del hotel.
 
 PERSONALIDAD: ${PERSONALITY_PROMPTS[personality] || PERSONALITY_PROMPTS.friendly}${customTone ? `\nTONO ADICIONAL: ${customTone}` : ""}${langNote}${langNoteP}
 
@@ -184,11 +223,11 @@ INSTRUCCIONES CRÍTICAS DE COTIZACIÓN Y RESERVA:
 - EQUIVALENCIAS AUTOMÁTICAS: "para 2 personas" → tipo=doble.
 - Cuando el cliente pida precio para fechas concretas, respondé ÚNICA Y EXCLUSIVAMENTE con este formato, sin comillas triples (\`\`\`) ni texto extra:
 QUOTE_REQUEST:{"checkin":"YYYY-MM-DD","checkout":"YYYY-MM-DD","tipo":"doble|triple|cuadruple"}
-- Si el cliente quiere AVANZAR con la reserva o SOLICITARLA, los únicos datos que necesitás son: nombre, fechas, tipo de habitación, cantidad de personas y tipo de cama. Cuando tengas todo, respondé ÚNICA Y EXCLUSIVAMENTE con este formato, sin saltos de línea ni texto extra:
+- Si el cliente quiere CONFIRMAR la reserva, los únicos datos que necesitás son: nombre, fechas, tipo de habitación, cantidad de personas y tipo de cama. Cuando tengas todo, respondé ÚNICA Y EXCLUSIVAMENTE con este formato, sin saltos de línea ni texto extra:
 HANDOFF_JSON:{"nombre":"...","checkin":"...","checkout":"...","habitacion":"...","personas":"...","precio":"...","cama":"..."}
 - Si falta algún dato, preguntá.
 - Si la consulta no es sobre el hotel: OUT_OF_SCOPE
-- Si no tenés información suficiente: UNANSWERED`;
+- Si la consulta SÍ es sobre el hotel pero no tenés la información para responderla: UNANSWERED`;
 }
 
 export default async function handler(req) {
@@ -203,10 +242,17 @@ export default async function handler(req) {
 
   try {
     const body = await req.json();
-    const { messages, lastQuote, action } = body;
-    
+    const { lastQuote, action } = body;
+
+    // Endurecimiento para sitio público: capamos cantidad y largo
+    // de mensajes antes de mandarlos al modelo.
+    const messages = (Array.isArray(body.messages) ? body.messages : [])
+      .slice(-20)
+      .map(m => ({ role: m.role, content: String(m.content || "").slice(0, 2000) }));
+
     const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
     if (!GEMINI_API_KEY) return new Response(JSON.stringify({ error: "API key no configurada" }), { status: 500, headers: cors });
+    if (!SUPABASE_URL || !SUPABASE_KEY) return new Response(JSON.stringify({ error: "Supabase no configurado (SUPABASE_URL / SUPABASE_ANON_KEY)" }), { status: 500, headers: cors });
 
     const { settings, rooms, prices } = await getStaticData();
     const hotelWhatsapp = settings["hotel_whatsapp"] || "";
@@ -225,7 +271,7 @@ export default async function handler(req) {
 
     const geminiMessages = messages.map(msg => ({ role: msg.role === "assistant" ? "model" : "user", parts: [{ text: msg.content }] }));
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`;
-    
+
     const geminiRes = await fetch(geminiUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -242,11 +288,14 @@ export default async function handler(req) {
         const jsonStr = reply.substring(reply.indexOf("{"), reply.lastIndexOf("}") + 1);
         const qData = JSON.parse(jsonStr);
         const discount = settings["discount"] || "0";
-        const extraInfo = `Información adicional:\n- Las tarifas pueden variar si la reserva no se confirma.`;
+        // Texto extra configurable desde la app principal (setting quote_extra_info)
+        const extraInfo = settings["quote_extra_info"]
+          ? `Información adicional:\n- ${settings["quote_extra_info"]}`
+          : "";
         const quote = calcQuote(prices, qData.checkin, qData.checkout, qData.tipo, discount, extraInfo);
-        
+
         if (quote && !quote.error) {
-          return new Response(JSON.stringify({ reply: quote.text + "\n\n¿Te gustaría que envíe estos datos a recepción para iniciar tu reserva?", quoteData: { checkin: qData.checkin, checkout: qData.checkout, tipo: qData.tipo, precio: quote.totalSinDesc }, hotelWhatsapp, hotelEmail }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
+          return new Response(JSON.stringify({ reply: quote.text + "\n\n¿Querés confirmar la reserva?", quoteData: { checkin: qData.checkin, checkout: qData.checkout, tipo: qData.tipo, precio: quote.totalSinDesc }, hotelWhatsapp, hotelEmail }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
         } else {
           return new Response(JSON.stringify({ reply: quote?.error || "No hay tarifas cargadas para esas fechas.", hotelWhatsapp, hotelEmail }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
         }
@@ -264,26 +313,41 @@ export default async function handler(req) {
 
         const tipo = handoffData.habitacion.toLowerCase().includes("triple") ? "triple" : handoffData.habitacion.toLowerCase().includes("cuadruple") ? "cuadruple" : "doble";
         let quoteText = null;
-        
+
         if (handoffData.checkin && handoffData.checkout) {
           const q = calcQuote(prices, handoffData.checkin, handoffData.checkout, tipo, settings["discount"] || "0", "");
           if (q && !q.error) { handoffData.precio = q.totalSinDesc; handoffData.habitacion = tipo; quoteText = q.text; }
         }
-        
+
         try {
-          await insertSupabase("chatbot_leads", { name: handoffData.nombre, phone: "", context: `Hab: ${handoffData.habitacion}, Fechas: ${handoffData.checkin} → ${handoffData.checkout}`, created_at: new Date().toISOString() });
+          await insertSupabase("chatbot_leads", { name: String(handoffData.nombre).slice(0, 120), phone: "", context: `Hab: ${handoffData.habitacion}, Personas: ${handoffData.personas}, Fechas: ${handoffData.checkin} → ${handoffData.checkout}, Precio: ${handoffData.precio}` });
         } catch(e) {}
-        
+
         return new Response(JSON.stringify({ reply: "QUOTE_BEFORE_HANDOFF", handoffData, quoteText, hotelWhatsapp, hotelEmail }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
       } catch(e) { console.error("Error parseando HANDOFF:", e); }
     }
 
     if (reply === "UNANSWERED" || reply === "OUT_OF_SCOPE") {
+      // Solo UNANSWERED se registra: es una consulta legítima del hotel
+      // a la que le falta información. OUT_OF_SCOPE no aporta nada.
+      if (reply === "UNANSWERED") {
+        try {
+          const lastUser = [...messages].reverse().find(m => m.role === "user");
+          const prevContext = messages.slice(-5, -1).map(m => `${m.role}: ${m.content.slice(0, 80)}`).join(" | ");
+          if (lastUser?.content) {
+            await rpcSupabase("log_unanswered_question", {
+              p_question: lastUser.content,
+              p_context: prevContext,
+            });
+          }
+        } catch(e) { console.error("Error registrando unanswered:", e); }
+      }
       return new Response(JSON.stringify({ reply: settings["bot_fallback_msg"] || "Esa consulta está fuera de mis posibilidades. Podés contactarnos directamente.", handoffData: null, hotelWhatsapp, hotelEmail }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
     }
 
-    return new Response(JSON.stringify({ reply: reply.replace(/
-http://googleusercontent.com/immersive_entry_chip/0
+    return new Response(JSON.stringify({ reply: reply.replace(/```json/gi, "").replace(/```/g, "").replace(/HANDOFF_JSON:/g, ""), handoffData: null, hotelWhatsapp, hotelEmail }), { status: 200, headers: { ...cors, "Content-Type": "application/json" } });
 
-### Un último detalle importante
-En el código no modifiqué el mensaje de bienvenida con el que arranca el chat, porque tu sistema lo está tomando de Supabase. Para que el cambio sea 100% efectivo, vas a tener que entrar al *Table Editor* de tu proyecto, buscar la tabla `settings`, encontrar la fila donde la `key` es **`bot_welcome_msg`**, y actualizar ese texto para que ya no diga *"confirmar tu reserva"*, sino algo como *"cotizar tu estadía e iniciar el contacto"*.
+  } catch (err) {
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: cors });
+  }
+}
